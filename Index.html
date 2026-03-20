@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Caixa Uber - Estoque e Vendas</title>
+    <style>
+        :root {
+            --primary: #2ecc71;
+            --secondary: #2c3e50;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+            --white: #ffffff;
+            --info: #3498db;
+            --tip: #9b59b6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+
+        .container { max-width: 500px; margin: 0 auto; }
+
+        header {
+            background: var(--secondary);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .dashboard {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .dashboard h3 { margin: 0; font-size: 0.8em; color: #888; text-transform: uppercase; }
+        .dashboard p { margin: 5px 0 0; font-size: 2.2em; font-weight: bold; color: var(--primary); }
+        
+        /* Estilo para o valor das gorjetas */
+        .tip-display { margin-top: 10px; font-size: 1.2em !important; color: var(--info) !important; }
+
+        .controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-add-float, .btn-box-float, .btn-tip-float {
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-add-float { background: var(--primary); }
+        .btn-box-float { background: var(--info); }
+        .btn-tip-float { background: var(--tip); }
+
+        .product-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .product-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .product-details { flex: 1; }
+        .product-details h4 { margin: 0 0 5px 0; font-size: 1em; }
+        
+        .stock-badge {
+            font-size: 0.75em;
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .low-stock { color: var(--danger); font-weight: bold; }
+
+        .btn-sell {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-sell:disabled { background: #ccc; cursor: not-allowed; }
+
+        .btn-delete {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+        }
+
+        .btn-edit {
+            position: absolute;
+            top: 5px;
+            right: 30px;
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Modais */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 85%;
+            max-width: 400px;
+        }
+
+        /* Modal Fullscreen para o Resumo */
+        .modal-full {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: var(--bg);
+            overflow-y: auto;
+        }
+
+        .modal-full-content {
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .btn-back {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 10px; background: white; border-radius: 10px; }
+        .history-table th { text-align: left; color: #888; padding: 10px; border-bottom: 2px solid #eee; }
+        .history-table td { padding: 12px 10px; border-top: 1px solid #eee; vertical-align: middle; }
+
+        .btn-clear {
+            width: 100%;
+            background: none;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 30px;
+            font-weight: bold;
+        }
+
+        .btn-minus {
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .img-history {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 style="margin:0">🚗 Caixa Uber 🚗</h1>
+    </header>
+
+    <div class="dashboard">
+        <h3>Total em Caixa</h3>
+        <p id="total-caixa">R$ 0,00</p>
+        <h3 style="margin-top: 15px; font-size: 0.7em;">Gorjetas Uber</h3>
+        <p id="total-gorjetas" class="tip-display">R$ 0,00</p>
+    </div>
+
+    <div class="controls">
+        <button class="btn-tip-float" onclick="openTipModal()">💎</button>
+        <button class="btn-box-float" onclick="openHistoryModal()">💰</button>
+        <button class="btn-add-float" onclick="openModal()">+</button>
+    </div>
+    <div style="clear: both;"></div>
+
+    <div id="product-list"></div>
+</div>
+
+<div id="productModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title">Novo Produto</h3>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="new-name" placeholder="Nome do Produto">
+        <input type="text" id="new-img" placeholder="Link da Imagem (URL)">
+        <input type="number" id="new-price" step="0.50" placeholder="Preço de Venda (R$)">
+        <input type="number" id="new-stock" placeholder="Quantidade em Estoque">
+        <button id="btn-modal-save" class="btn-sell" style="width:100%; margin-top:10px" onclick="saveNewProduct()">Cadastrar</button>
+        <button class="btn-clear" style="border:none; margin-top:5px" onclick="closeModal()">Cancelar</button>
+    </div>
+</div>
+
+<div id="tipModal" class="modal">
+    <div class="modal-content">
+        <h3>Adicionar Gorjeta 💎</h3>
+        <input type="number" id="tip-amount" step="0.50" placeholder="Valor da Gorjeta (R$)">
+        <button class="btn-sell" style="width:100%; margin-top:10px" onclick="addTip()">Adicionar</button>
+        <button class="btn-clear" style="border:none; color: var(--danger)" onclick="resetTips()">Zerar Gorjetas</button>
+        <button class="btn-clear" style="border:none; margin-top:5px" onclick="closeTipModal()">Cancelar</button>
+    </div>
+</div>
+
+<div id="historyModal" class="modal-full">
+    <div class="modal-full-content">
+        <div class="modal-header">
+            <button class="btn-back" onclick="closeHistoryModal()">← Voltar</button>
+            <h2 style="margin:0">Resumo de Vendas</h2>
+        </div>
+
+        <div class="dashboard" style="background: var(--secondary); color: white;">
+            <h3 style="color: #ccc;">Faturamento Total</h3>
+            <p id="total-caixa-modal" style="color: var(--primary);">R$ 0,00</p>
+        </div>
+
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th style="text-align:center">Qtd</th>
+                    <th style="text-align:right">Total</th>
+                    <th style="text-align:center">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+        </table>
+
+        <button class="btn-clear" onclick="resetDay()">Zerar Vendas do Dia</button>
+    </div>
+</div>
+
+<script>
+    let produtos = JSON.parse(localStorage.getItem('uberProd_v2')) || [];
+    let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
+    // Carrega gorjetas do localStorage ou inicia com 0
+    let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
+
+    function renderProducts() {
+        const list = document.getElementById('product-list');
+        list.innerHTML = '';
+        
+        produtos.forEach(p => {
+            const isLow = p.estoque <= 5 ? 'low-stock' : '';
+            list.innerHTML += `
+                <div class="product-card">
+                    <button class="btn-edit" onclick="editProduct(${p.id})">✏️</button>
+                    <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑️</button>
+                    <img src="${p.img}" class="product-img" onerror="this.src='https://via.placeholder.com/60?text=Doce'">
+                    <div class="product-details">
+                        <h4>${p.nome}</h4>
+                        <span class="stock-badge ${isLow}">Estoque: ${p.estoque}</span>
+                        <div style="margin-top:5px">
+                             <input type="number" step="0.50" id="price-${p.id}" value="${p.preco.toFixed(2)}" style="width:60px; padding:4px">
+                        </div>
+                    </div>
+                    <button class="btn-sell" ${p.estoque <= 0 ? 'disabled' : ''} onclick="sell(${p.id})">Vender</button>
+                </div>
+            `;
+        });
+        updateUI();
+    }
+
+    function sell(id) {
+        const p = produtos.find(i => i.id === id);
+        const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
+        
+        if(p.estoque > 0) {
+            p.estoque--;
+            caixa.total += precoAtual;
+            
+            if(!caixa.vendasPorProduto[p.nome]) {
+                caixa.vendasPorProduto[p.nome] = { qtd: 0, total: 0, img: p.img, idOrigem: p.id };
+            }
+            caixa.vendasPorProduto[p.nome].qtd += 1;
+            caixa.vendasPorProduto[p.nome].total += precoAtual;
+
+            save();
+            renderProducts();
+        }
+    }
+
+    function removerVenda(nome) {
+        const venda = caixa.vendasPorProduto[nome];
+        if (venda && venda.qtd > 0) {
+            const valorUnitario = venda.total / venda.qtd;
+            caixa.total -= valorUnitario;
+            venda.qtd -= 1;
+            venda.total -= valorUnitario;
+
+            const p = produtos.find(item => item.id === venda.idOrigem);
+            if (p) p.estoque += 1;
+
+            if (venda.qtd <= 0) {
+                delete caixa.vendasPorProduto[nome];
+            }
+
+            save();
+            renderProducts();
+        }
+    }
+
+    function addTip() {
+        const valor = parseFloat(document.getElementById('tip-amount').value);
+        if(valor > 0) {
+            gorjetas += valor;
+            localStorage.setItem('uberGorjetas_v2', gorjetas);
+            document.getElementById('tip-amount').value = '';
+            closeTipModal();
+            updateUI();
+        }
+    }
+
+    function resetTips() {
+        if(confirm("Deseja zerar o total de gorjetas?")) {
+            gorjetas = 0;
+            localStorage.setItem('uberGorjetas_v2', gorjetas);
+            updateUI();
+            closeTipModal();
+        }
+    }
+
+    function saveNewProduct() {
+        const idParaEditar = document.getElementById('edit-id').value;
+        const nome = document.getElementById('new-name').value;
+        const img = document.getElementById('new-img').value;
+        const preco = parseFloat(document.getElementById('new-price').value);
+        const estoque = parseInt(document.getElementById('new-stock').value) || 0;
+
+        if(nome && preco) {
+            if(idParaEditar) {
+                const p = produtos.find(item => item.id == idParaEditar);
+                p.nome = nome; p.img = img; p.preco = preco; p.estoque = estoque;
+            } else {
+                produtos.push({ id: Date.now(), nome, img, preco, estoque });
+            }
+            save();
+            closeModal();
+            renderProducts();
+            ['new-name','new-img','new-price','new-stock', 'edit-id'].forEach(id => document.getElementById(id).value = '');
+        }
+    }
+
+    function editProduct(id) {
+        const p = produtos.find(item => item.id === id);
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('new-name').value = p.nome;
+        document.getElementById('new-img').value = p.img;
+        document.getElementById('new-price').value = p.preco;
+        document.getElementById('new-stock').value = p.estoque;
+        document.getElementById('modal-title').innerText = "Editar Produto";
+        document.getElementById('btn-modal-save').innerText = "Salvar Alterações";
+        openModal();
+    }
+
+    function deleteProduct(id) {
+        if(confirm("Excluir produto?")) {
+            produtos = produtos.filter(p => p.id !== id);
+            save();
+            renderProducts();
+        }
+    }
+
+    function updateUI() {
+        const formatado = `R$ ${caixa.total.toFixed(2)}`;
+        document.getElementById('total-caixa').innerText = formatado;
+        document.getElementById('total-caixa-modal').innerText = formatado;
+        document.getElementById('total-gorjetas').innerText = `R$ ${gorjetas.toFixed(2)}`;
+        
+        const body = document.getElementById('history-body');
+        body.innerHTML = '';
+        
+        for(let nome in caixa.vendasPorProduto) {
+            const v = caixa.vendasPorProduto[nome];
+            body.innerHTML += `
+                <tr>
+                    <td style="display:flex; align-items:center;">
+                        <img src="${v.img}" class="img-history" onerror="this.src='https://via.placeholder.com/30?text=D'">
+                        ${nome}
+                    </td>
+                    <td style="text-align:center">${v.qtd}</td>
+                    <td style="text-align:right">R$ ${v.total.toFixed(2)}</td>
+                    <td style="text-align:center">
+                        <button class="btn-minus" onclick="removerVenda('${nome}')">–</button>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function save() {
+        localStorage.setItem('uberProd_v2', JSON.stringify(produtos));
+        localStorage.setItem('uberCaixa_v2', JSON.stringify(caixa));
+        updateUI();
+    }
+
+    function resetDay() {
+        if(confirm("Deseja zerar as vendas do dia?")) {
+            caixa = { total: 0, vendasPorProduto: {} };
+            save();
+        }
+    }
+
+    function openModal() { document.getElementById('productModal').style.display = 'block'; }
+    function closeModal() { 
+        document.getElementById('productModal').style.display = 'none';
+        document.getElementById('edit-id').value = '';
+        document.getElementById('modal-title').innerText = "Novo Produto";
+        document.getElementById('btn-modal-save').innerText = "Cadastrar";
+    }
+
+    function openHistoryModal() { document.getElementById('historyModal').style.display = 'block'; }
+    function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
+    
+    function openTipModal() { document.getElementById('tipModal').style.display = 'block'; }
+    function closeTipModal() { document.getElementById('tipModal').style.display = 'none'; }
+
+    renderProducts();
+</script>
+</body>
+</html>
