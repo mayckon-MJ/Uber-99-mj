@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -14,7 +13,7 @@
             --white: #ffffff;
             --info: #3498db;
             --tip: #9b59b6;
-            --cart: #f1c40f;
+            --list: #f1c40f;
         }
 
         body {
@@ -58,7 +57,7 @@
             margin-bottom: 15px;
         }
 
-        .btn-add-float, .btn-box-float, .btn-tip-float, .btn-cart-float {
+        .btn-add-float, .btn-box-float, .btn-tip-float, .btn-list-float {
             color: white;
             border: none;
             width: 50px;
@@ -72,7 +71,19 @@
         .btn-add-float { background: var(--primary); }
         .btn-box-float { background: var(--info); }
         .btn-tip-float { background: var(--tip); }
-        .btn-cart-float { background: var(--cart); }
+        .btn-list-float { background: var(--list); }
+
+        .btn-apply {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
 
         .product-card {
             background: var(--white);
@@ -84,20 +95,12 @@
             gap: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             position: relative;
-            transition: background 0.3s;
+            transition: background 0.2s;
         }
 
-        /* Animação de Piscar */
-        @keyframes flash-sell {
-            0% { background-color: var(--white); }
-            25% { background-color: #e74c3c; }
-            50% { background-color: #f1c40f; }
-            75% { background-color: #e74c3c; }
-            100% { background-color: var(--white); }
-        }
-
-        .animate-flash {
-            animation: flash-sell 0.4s ease-in-out;
+        /* Animação de piscar vermelho */
+        .flash-red {
+            background-color: #ffcccc !important;
         }
 
         .product-img {
@@ -228,19 +231,6 @@
             font-weight: bold;
         }
 
-        .btn-apply {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
         .btn-minus {
             background: var(--danger);
             color: white;
@@ -273,11 +263,11 @@
         <p id="total-caixa">R$ 0,00</p>
         <h3 style="margin-top: 15px; font-size: 0.7em;">Gorjetas Uber</h3>
         <p id="total-gorjetas" class="tip-display">R$ 0,00</p>
-        <button class="btn-apply" onclick="aplicarVendas()">Aplicar</button>
+        <button class="btn-apply" onclick="aplicarFaturamento()">Aplicar</button>
     </div>
 
     <div class="controls">
-        <button class="btn-cart-float" onclick="openCartModal()">🛒</button>
+        <button class="btn-list-float" onclick="openFaturamentoModal()">📋</button>
         <button class="btn-tip-float" onclick="openTipModal()">💎</button>
         <button class="btn-box-float" onclick="openHistoryModal()">💰</button>
         <button class="btn-add-float" onclick="openModal()">+</button>
@@ -314,11 +304,11 @@
     <div class="modal-full-content">
         <div class="modal-header">
             <button class="btn-back" onclick="closeHistoryModal()">← Voltar</button>
-            <h2 style="margin:0">Itens Vendidos Hoje</h2>
+            <h2 style="margin:0">Resumo de Vendas</h2>
         </div>
 
         <div class="dashboard" style="background: var(--secondary); color: white;">
-            <h3 style="color: #ccc;">Faturamento do Momento</h3>
+            <h3 style="color: #ccc;">Faturamento Total</h3>
             <p id="total-caixa-modal" style="color: var(--primary);">R$ 0,00</p>
         </div>
 
@@ -338,29 +328,22 @@
     </div>
 </div>
 
-<div id="cartModal" class="modal-full">
+<div id="faturamentoModal" class="modal-full">
     <div class="modal-full-content">
         <div class="modal-header">
-            <button class="btn-back" onclick="closeCartModal()">← Voltar</button>
-            <h2 style="margin:0">Histórico Geral</h2>
+            <button class="btn-back" onclick="closeFaturamentoModal()">← Voltar</button>
+            <h2 style="margin:0">Faturamento Acumulado</h2>
         </div>
 
-        <div class="dashboard" style="background: var(--secondary); color: white;">
-            <h3 style="color: #ccc;">Total Acumulado</h3>
-            <p id="total-historico-geral" style="color: var(--cart);">R$ 0,00</p>
+        <div class="dashboard">
+            <h3>Total Geral de Hoje</h3>
+            <p id="total-geral-hoje">R$ 0,00</p>
         </div>
 
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>Data/Hora</th>
-                    <th style="text-align:right">Valor Aplicado</th>
-                </tr>
-            </thead>
-            <tbody id="cart-history-body"></tbody>
-        </table>
-        
-        <button class="btn-clear" onclick="limparHistoricoGeral()">Limpar Tudo</button>
+        <div id="lista-faturamento">
+            </div>
+
+        <button class="btn-clear" onclick="limparFaturamentoAcumulado()">Zerar Histórico de Faturamento</button>
     </div>
 </div>
 
@@ -368,7 +351,8 @@
     let produtos = JSON.parse(localStorage.getItem('uberProd_v2')) || [];
     let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
     let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
-    let historicoGeral = JSON.parse(localStorage.getItem('uberHistoricoGeral_v2')) || { total: 0, entradas: [] };
+    // Histórico de faturamentos aplicados
+    let faturamentosAplicados = JSON.parse(localStorage.getItem('uberFaturamentos_v2')) || [];
 
     function renderProducts() {
         const list = document.getElementById('product-list');
@@ -388,22 +372,22 @@
                              <input type="number" step="0.50" id="price-${p.id}" value="${p.preco.toFixed(2)}" style="width:60px; padding:4px">
                         </div>
                     </div>
-                    <button class="btn-sell" ${p.estoque <= 0 ? 'disabled' : ''} onclick="sell(${p.id})">Vender</button>
+                    <button class="btn-sell" ${p.estoque <= 0 ? 'disabled' : ''} onclick="sell(${p.id}, this)">Vender</button>
                 </div>
             `;
         });
         updateUI();
     }
 
-    function sell(id) {
+    function sell(id, btn) {
         const p = produtos.find(i => i.id === id);
         const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
         
         if(p.estoque > 0) {
+            // Efeito de piscar vermelho no card
             const card = document.getElementById(`card-${id}`);
-            card.classList.remove('animate-flash');
-            void card.offsetWidth; 
-            card.classList.add('animate-flash');
+            card.classList.add('flash-red');
+            setTimeout(() => card.classList.remove('flash-red'), 300);
 
             p.estoque--;
             caixa.total += precoAtual;
@@ -416,6 +400,60 @@
 
             save();
             renderProducts();
+        }
+    }
+
+    function aplicarFaturamento() {
+        if(confirm("Deseja aplicar e zerar o caixa e as gorjetas?")) {
+            const valorTotal = caixa.total + gorjetas;
+            const data = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            
+            faturamentosAplicados.push({
+                hora: data,
+                valor: valorTotal
+            });
+
+            // Zerando apenas caixa e gorjetas
+            caixa.total = 0;
+            gorjetas = 0;
+
+            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+            save();
+            localStorage.setItem('uberGorjetas_v2', gorjetas);
+            updateUI();
+            alert("Faturamento aplicado com sucesso!");
+        }
+    }
+
+    function openFaturamentoModal() {
+        const lista = document.getElementById('lista-faturamento');
+        const totalGeral = document.getElementById('total-geral-hoje');
+        lista.innerHTML = '';
+        let soma = 0;
+
+        faturamentosAplicados.forEach(f => {
+            soma += f.valor;
+            lista.innerHTML += `
+                <div class="dashboard" style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
+                    <span><b>${f.hora}</b></span>
+                    <span style="color: var(--primary)">R$ ${f.valor.toFixed(2)}</span>
+                </div>
+            `;
+        });
+
+        totalGeral.innerText = `R$ ${soma.toFixed(2)}`;
+        document.getElementById('faturamentoModal').style.display = 'block';
+    }
+
+    function closeFaturamentoModal() {
+        document.getElementById('faturamentoModal').style.display = 'none';
+    }
+
+    function limparFaturamentoAcumulado() {
+        if(confirm("Deseja zerar todo o histórico de faturamento?")) {
+            faturamentosAplicados = [];
+            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+            openFaturamentoModal();
         }
     }
 
@@ -456,38 +494,6 @@
             localStorage.setItem('uberGorjetas_v2', gorjetas);
             updateUI();
             closeTipModal();
-        }
-    }
-
-    function aplicarVendas() {
-        if (caixa.total <= 0) {
-            alert("Não há vendas para aplicar.");
-            return;
-        }
-
-        if (confirm("Deseja aplicar o valor das vendas ao Histórico Geral? Isso zerará o caixa do dia.")) {
-            const agora = new Date();
-            const dataFormatada = agora.toLocaleDateString() + ' ' + agora.toLocaleTimeString();
-            
-            historicoGeral.total += caixa.total;
-            historicoGeral.entradas.unshift({
-                data: dataFormatada,
-                valor: caixa.total
-            });
-
-            caixa = { total: 0, vendasPorProduto: {} };
-            
-            localStorage.setItem('uberHistoricoGeral_v2', JSON.stringify(historicoGeral));
-            save();
-            renderProducts();
-        }
-    }
-
-    function limparHistoricoGeral() {
-        if(confirm("Deseja apagar TODO o histórico acumulado?")) {
-            historicoGeral = { total: 0, entradas: [] };
-            localStorage.setItem('uberHistoricoGeral_v2', JSON.stringify(historicoGeral));
-            updateUI();
         }
     }
 
@@ -537,7 +543,6 @@
         document.getElementById('total-caixa').innerText = formatado;
         document.getElementById('total-caixa-modal').innerText = formatado;
         document.getElementById('total-gorjetas').innerText = `R$ ${gorjetas.toFixed(2)}`;
-        document.getElementById('total-historico-geral').innerText = `R$ ${historicoGeral.total.toFixed(2)}`;
         
         const body = document.getElementById('history-body');
         body.innerHTML = '';
@@ -558,17 +563,6 @@
                 </tr>
             `;
         }
-
-        const cartBody = document.getElementById('cart-history-body');
-        cartBody.innerHTML = '';
-        historicoGeral.entradas.forEach(e => {
-            cartBody.innerHTML += `
-                <tr>
-                    <td>${e.data}</td>
-                    <td style="text-align:right">R$ ${e.valor.toFixed(2)}</td>
-                </tr>
-            `;
-        });
     }
 
     function save() {
@@ -598,10 +592,8 @@
     function openTipModal() { document.getElementById('tipModal').style.display = 'block'; }
     function closeTipModal() { document.getElementById('tipModal').style.display = 'none'; }
 
-    function openCartModal() { document.getElementById('cartModal').style.display = 'block'; }
-    function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
-
     renderProducts();
 </script>
 </body>
 </html>
+
