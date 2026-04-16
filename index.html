@@ -232,11 +232,13 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 25px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 15px;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .btn-minus {
@@ -312,11 +314,11 @@
     <div class="modal-full-content">
         <div class="modal-header">
             <button class="btn-back" onclick="closeHistoryModal()">← Voltar</button>
-            <h2 style="margin:0">Resumo de Vendas</h2>
+            <h2 style="margin:0">Itens Vendidos Hoje</h2>
         </div>
 
         <div class="dashboard" style="background: var(--secondary); color: white;">
-            <h3 style="color: #ccc;">Faturamento Total</h3>
+            <h3 style="color: #ccc;">Faturamento do Momento</h3>
             <p id="total-caixa-modal" style="color: var(--primary);">R$ 0,00</p>
         </div>
 
@@ -358,7 +360,7 @@
             <tbody id="cart-history-body"></tbody>
         </table>
         
-        <button class="btn-clear" onclick="limparHistoricoGeral()">Limpar Histórico Geral</button>
+        <button class="btn-clear" onclick="limparHistoricoGeral()">Limpar Tudo</button>
     </div>
 </div>
 
@@ -366,7 +368,6 @@
     let produtos = JSON.parse(localStorage.getItem('uberProd_v2')) || [];
     let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
     let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
-    // Carrega histórico geral do localStorage
     let historicoGeral = JSON.parse(localStorage.getItem('uberHistoricoGeral_v2')) || { total: 0, entradas: [] };
 
     function renderProducts() {
@@ -399,10 +400,9 @@
         const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
         
         if(p.estoque > 0) {
-            // Efeito de piscar
             const card = document.getElementById(`card-${id}`);
             card.classList.remove('animate-flash');
-            void card.offsetWidth; // Trigger reflow
+            void card.offsetWidth; 
             card.classList.add('animate-flash');
 
             p.estoque--;
@@ -465,7 +465,7 @@
             return;
         }
 
-        if (confirm("Deseja aplicar o valor total das vendas ao Histórico Geral e zerar as vendas do dia?")) {
+        if (confirm("Deseja aplicar o valor das vendas ao Histórico Geral? Isso zerará o caixa do dia.")) {
             const agora = new Date();
             const dataFormatada = agora.toLocaleDateString() + ' ' + agora.toLocaleTimeString();
             
@@ -475,7 +475,6 @@
                 valor: caixa.total
             });
 
-            // Zera as vendas do dia
             caixa = { total: 0, vendasPorProduto: {} };
             
             localStorage.setItem('uberHistoricoGeral_v2', JSON.stringify(historicoGeral));
