@@ -249,6 +249,25 @@
             object-fit: cover;
             margin-right: 8px;
         }
+
+        /* Novos estilos para os botões do faturamento */
+        .faturamento-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .faturamento-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+        .btn-view { background: var(--info); color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+        .btn-trash { background: var(--danger); color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -308,7 +327,7 @@
         </div>
 
         <div class="dashboard" style="background: var(--secondary); color: white;">
-            <h3 style="color: #ccc;">Faturamento Total</h3>
+            <h3 style="color: #ccc;">Faturamento Total (Vendas)</h3>
             <p id="total-caixa-modal" style="color: var(--primary);">R$ 0,00</p>
         </div>
 
@@ -340,10 +359,17 @@
             <p id="total-geral-hoje">R$ 0,00</p>
         </div>
 
-        <div id="lista-faturamento">
-            </div>
+        <div id="lista-faturamento"></div>
 
         <button class="btn-clear" onclick="limparFaturamentoAcumulado()">Zerar Histórico de Faturamento</button>
+    </div>
+</div>
+
+<div id="viewVendasModal" class="modal">
+    <div class="modal-content">
+        <h3>Detalhes do Fechamento</h3>
+        <div id="detalhe-vendas-content" style="max-height: 300px; overflow-y: auto; text-align: left; font-size: 0.9em;"></div>
+        <button class="btn-sell" style="width:100%; margin-top:15px" onclick="document.getElementById('viewVendasModal').style.display='none'">Fechar</button>
     </div>
 </div>
 
@@ -406,15 +432,22 @@
     function aplicarFaturamento() {
         if(confirm("Deseja aplicar e zerar o caixa e as gorjetas?")) {
             const valorTotal = caixa.total + gorjetas;
-            const data = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            const dataObjeto = new Date();
+            const dataStr = dataObjeto.toLocaleDateString('pt-BR');
+            const horaStr = dataObjeto.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
             
             faturamentosAplicados.push({
-                hora: data,
-                valor: valorTotal
+                id: Date.now(),
+                data: dataStr,
+                hora: horaStr,
+                valor: valorTotal,
+                vendaValor: caixa.total,
+                gorjetaValor: gorjetas,
+                detalhes: JSON.parse(JSON.stringify(caixa.vendasPorProduto)) // Cópia dos itens vendidos
             });
 
-            // Zerando apenas caixa e gorjetas
-            caixa.total = 0;
+            // Zerando apenas caixa e gorjetas e vendas do dia (para o próximo ciclo)
+            caixa = { total: 0, vendasPorProduto: {} };
             gorjetas = 0;
 
             localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
@@ -434,15 +467,50 @@
         faturamentosAplicados.forEach(f => {
             soma += f.valor;
             lista.innerHTML += `
-                <div class="dashboard" style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
-                    <span><b>${f.hora}</b></span>
-                    <span style="color: var(--primary)">R$ ${f.valor.toFixed(2)}</span>
+                <div class="faturamento-item">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span><b>${f.data} - ${f.hora}</b></span>
+                        <b style="color: var(--primary)">R$ ${f.valor.toFixed(2)}</b>
+                    </div>
+                    <div class="faturamento-grid">
+                        <span>Vendas: R$ ${f.vendaValor.toFixed(2)}</span>
+                        <span>Gorjetas: R$ ${f.gorjetaValor.toFixed(2)}</span>
+                    </div>
+                    <div style="margin-top:10px; display:flex; gap:10px; justify-content:flex-end;">
+                        <button class="btn-view" onclick="visualizarDetalhes(${f.id})">👁️</button>
+                        <button class="btn-trash" onclick="excluirFaturamentoItem(${f.id})">🗑️</button>
+                    </div>
                 </div>
             `;
         });
 
         totalGeral.innerText = `R$ ${soma.toFixed(2)}`;
         document.getElementById('faturamentoModal').style.display = 'block';
+    }
+
+    function visualizarDetalhes(id) {
+        const item = faturamentosAplicados.find(f => f.id === id);
+        const container = document.getElementById('detalhe-vendas-content');
+        container.innerHTML = '';
+        
+        let temVendas = false;
+        for(let nome in item.detalhes) {
+            temVendas = true;
+            const v = item.detalhes[nome];
+            container.innerHTML += `<p>• ${nome} (${v.qtd}x) - R$ ${v.total.toFixed(2)}</p>`;
+        }
+        
+        if(!temVendas) container.innerHTML = "<p>Nenhuma venda registrada neste fechamento.</p>";
+        
+        document.getElementById('viewVendasModal').style.display = 'block';
+    }
+
+    function excluirFaturamentoItem(id) {
+        if(confirm("Deseja excluir este registro de faturamento?")) {
+            faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
+            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+            openFaturamentoModal();
+        }
     }
 
     function closeFaturamentoModal() {
