@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -250,24 +251,28 @@
             margin-right: 8px;
         }
 
-        /* Novos estilos para os botões do faturamento */
-        .faturamento-item {
+        /* Estilos Novos */
+        .card-faturamento {
             background: white;
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .faturamento-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            font-size: 0.8em;
+        .faturamento-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .faturamento-detalhes {
+            font-size: 0.85em;
             color: #666;
             margin-top: 5px;
+            border-top: 1px dashed #eee;
+            padding-top: 5px;
         }
-        .btn-view { background: var(--info); color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
-        .btn-trash { background: var(--danger); color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+        .btn-view { background: var(--info); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-del-item { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2em; }
     </style>
 </head>
 <body>
@@ -365,19 +370,10 @@
     </div>
 </div>
 
-<div id="viewVendasModal" class="modal">
-    <div class="modal-content">
-        <h3>Detalhes do Fechamento</h3>
-        <div id="detalhe-vendas-content" style="max-height: 300px; overflow-y: auto; text-align: left; font-size: 0.9em;"></div>
-        <button class="btn-sell" style="width:100%; margin-top:15px" onclick="document.getElementById('viewVendasModal').style.display='none'">Fechar</button>
-    </div>
-</div>
-
 <script>
     let produtos = JSON.parse(localStorage.getItem('uberProd_v2')) || [];
     let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
     let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
-    // Histórico de faturamentos aplicados
     let faturamentosAplicados = JSON.parse(localStorage.getItem('uberFaturamentos_v2')) || [];
 
     function renderProducts() {
@@ -410,7 +406,6 @@
         const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
         
         if(p.estoque > 0) {
-            // Efeito de piscar vermelho no card
             const card = document.getElementById(`card-${id}`);
             card.classList.add('flash-red');
             setTimeout(() => card.classList.remove('flash-red'), 300);
@@ -432,22 +427,22 @@
     function aplicarFaturamento() {
         if(confirm("Deseja aplicar e zerar o caixa e as gorjetas?")) {
             const valorTotal = caixa.total + gorjetas;
-            const dataObjeto = new Date();
-            const dataStr = dataObjeto.toLocaleDateString('pt-BR');
-            const horaStr = dataObjeto.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            const dataHora = new Date().toLocaleString('pt-BR');
             
+            // Copia os produtos vendidos para o histórico
+            const itensVendidos = JSON.parse(JSON.stringify(caixa.vendasPorProduto));
+
             faturamentosAplicados.push({
                 id: Date.now(),
-                data: dataStr,
-                hora: horaStr,
-                valor: valorTotal,
-                vendaValor: caixa.total,
-                gorjetaValor: gorjetas,
-                detalhes: JSON.parse(JSON.stringify(caixa.vendasPorProduto)) // Cópia dos itens vendidos
+                data: dataHora,
+                valorTotal: valorTotal,
+                valorVendas: caixa.total,
+                valorGorjetas: gorjetas,
+                itens: itensVendidos
             });
 
-            // Zerando apenas caixa e gorjetas e vendas do dia (para o próximo ciclo)
-            caixa = { total: 0, vendasPorProduto: {} };
+            caixa.total = 0;
+            caixa.vendasPorProduto = {};
             gorjetas = 0;
 
             localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
@@ -465,20 +460,21 @@
         let soma = 0;
 
         faturamentosAplicados.forEach(f => {
-            soma += f.valor;
+            soma += f.valorTotal;
             lista.innerHTML += `
-                <div class="faturamento-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span><b>${f.data} - ${f.hora}</b></span>
-                        <b style="color: var(--primary)">R$ ${f.valor.toFixed(2)}</b>
+                <div class="card-faturamento">
+                    <div class="faturamento-info">
+                        <div>
+                            <small>${f.data}</small><br>
+                            <b style="color: var(--primary)">Total: R$ ${f.valorTotal.toFixed(2)}</b>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button class="btn-view" onclick="visualizarItens(${f.id})">👁️</button>
+                            <button class="btn-del-item" onclick="deletarFaturamento(${f.id})">🗑️</button>
+                        </div>
                     </div>
-                    <div class="faturamento-grid">
-                        <span>Vendas: R$ ${f.vendaValor.toFixed(2)}</span>
-                        <span>Gorjetas: R$ ${f.gorjetaValor.toFixed(2)}</span>
-                    </div>
-                    <div style="margin-top:10px; display:flex; gap:10px; justify-content:flex-end;">
-                        <button class="btn-view" onclick="visualizarDetalhes(${f.id})">👁️</button>
-                        <button class="btn-trash" onclick="excluirFaturamentoItem(${f.id})">🗑️</button>
+                    <div class="faturamento-detalhes">
+                        Vendas: R$ ${f.valorVendas.toFixed(2)} | Gorjetas: R$ ${f.valorGorjetas.toFixed(2)}
                     </div>
                 </div>
             `;
@@ -488,25 +484,18 @@
         document.getElementById('faturamentoModal').style.display = 'block';
     }
 
-    function visualizarDetalhes(id) {
-        const item = faturamentosAplicados.find(f => f.id === id);
-        const container = document.getElementById('detalhe-vendas-content');
-        container.innerHTML = '';
-        
-        let temVendas = false;
-        for(let nome in item.detalhes) {
-            temVendas = true;
-            const v = item.detalhes[nome];
-            container.innerHTML += `<p>• ${nome} (${v.qtd}x) - R$ ${v.total.toFixed(2)}</p>`;
+    function visualizarItens(id) {
+        const f = faturamentosAplicados.find(item => item.id === id);
+        let msg = "Itens vendidos neste período:\n\n";
+        for (let nome in f.itens) {
+            msg += `- ${nome}: ${f.itens[nome].qtd}x (R$ ${f.itens[nome].total.toFixed(2)})\n`;
         }
-        
-        if(!temVendas) container.innerHTML = "<p>Nenhuma venda registrada neste fechamento.</p>";
-        
-        document.getElementById('viewVendasModal').style.display = 'block';
+        if (Object.keys(f.itens).length === 0) msg = "Nenhuma venda de produto registrada.";
+        alert(msg);
     }
 
-    function excluirFaturamentoItem(id) {
-        if(confirm("Deseja excluir este registro de faturamento?")) {
+    function deletarFaturamento(id) {
+        if (confirm("Excluir este faturamento do histórico?")) {
             faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
             localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
             openFaturamentoModal();
@@ -607,9 +596,12 @@
     }
 
     function updateUI() {
-        const formatado = `R$ ${caixa.total.toFixed(2)}`;
-        document.getElementById('total-caixa').innerText = formatado;
-        document.getElementById('total-caixa-modal').innerText = formatado;
+        // O faturamento total no modal agora soma o caixa atual + o que já foi aplicado no passado em vendas
+        let vendasAcumuladas = faturamentosAplicados.reduce((acc, f) => acc + f.valorVendas, 0);
+        let faturamentoTotalVendas = caixa.total + vendasAcumuladas;
+
+        document.getElementById('total-caixa').innerText = `R$ ${caixa.total.toFixed(2)}`;
+        document.getElementById('total-caixa-modal').innerText = `R$ ${faturamentoTotalVendas.toFixed(2)}`;
         document.getElementById('total-gorjetas').innerText = `R$ ${gorjetas.toFixed(2)}`;
         
         const body = document.getElementById('history-body');
@@ -664,4 +656,3 @@
 </script>
 </body>
 </html>
-
