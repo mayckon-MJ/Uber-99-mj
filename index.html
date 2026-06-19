@@ -86,6 +86,24 @@
             width: 100%;
         }
 
+        /* Novos estilos para os botões de Backup e Upload */
+        .backup-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-backup {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.9em;
+        }
+
         .product-card {
             background: var(--white);
             border-radius: 12px;
@@ -279,6 +297,12 @@
         <h3 style="margin-top: 15px; font-size: 0.7em;">Gorjetas Uber</h3>
         <p id="total-gorjetas" class="tip-display">R$ 0,00</p>
         <button class="btn-apply" onclick="aplicarFaturamento()">Aplicar</button>
+        
+        <div class="backup-controls">
+            <button class="btn-backup" onclick="baixarBackup()">📥 Baixar Backup</button>
+            <button class="btn-backup" onclick="document.getElementById('input-upload').click()">📤 Fazer Upload</button>
+            <input type="file" id="input-upload" accept=".json" style="display: none;" onchange="fazerUpload(event)">
+        </div>
     </div>
 
     <div class="controls">
@@ -619,6 +643,54 @@
             caixa = { total: 0, vendasPorProduto: {} };
             save();
         }
+    }
+
+    /* Novas Funções de Backup (Baixar) e Upload (Restaurar) */
+    function baixarBackup() {
+        const dadosDoSistema = {
+            produtos: produtos,
+            caixa: caixa,
+            gorjetas: gorjetas,
+            faturamentosAplicados: faturamentosAplicados
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosDoSistema, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `backup_caixa_uber_${Date.now()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function fazerUpload(event) {
+        const arquivo = event.target.files[0];
+        if (!arquivo) return;
+
+        const leitor = new FileReader();
+        leitor.onload = function(e) {
+            try {
+                const dadosImportados = JSON.parse(e.target.result);
+                
+                if (confirm("Isto irá substituir todos os dados atuais do sistema pelo arquivo importado. Deseja continuar?")) {
+                    if (dadosImportados.produtos) produtos = dadosImportados.produtos;
+                    if (dadosImportados.caixa) caixa = dadosImportados.caixa;
+                    if (dadosImportados.gorjetas !== undefined) gorjetas = parseFloat(dadosImportados.gorjetas);
+                    if (dadosImportados.faturamentosAplicados) faturamentosAplicados = dadosImportados.faturamentosAplicados;
+
+                    localStorage.setItem('uberProd_v2', JSON.stringify(produtos));
+                    localStorage.setItem('uberCaixa_v2', JSON.stringify(caixa));
+                    localStorage.setItem('uberGorjetas_v2', gorjetas);
+                    localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+
+                    renderProducts();
+                    alert("Dados restaurados com sucesso!");
+                }
+            } catch (err) {
+                alert("Erro ao ler o arquivo de backup. Certifique-se de escolher um arquivo .json válido gerado pelo sistema.");
+            }
+            event.target.value = ''; // Limpa o input
+        };
+        leitor.readAsText(arquivo);
     }
 
     function openModal() { document.getElementById('productModal').style.display = 'block'; }
