@@ -959,12 +959,11 @@ function calcularTroco() {
         leitor.readAsText(arquivo);
     }
 
-    function openTipModal() { 
-    document.getElementById('tip-amount').value = gorjetas.toFixed(2);
-    document.getElementById('tipModal').style.display = 'block'; 
-}
+    function openModal() {
+        document.getElementById('productModal').style.display = 'block';
+    }
 
-       function closeModal() { 
+    function closeModal() { 
         document.getElementById('productModal').style.display = 'none';
         document.getElementById('edit-id').value = '';
         document.getElementById('modal-title').innerText = "Novo Produto";
@@ -973,7 +972,10 @@ function calcularTroco() {
 
     function openHistoryModal() { document.getElementById('historyModal').style.display = 'block'; }
     function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
-    function openTipModal() { document.getElementById('tipModal').style.display = 'block'; }
+    function openTipModal() { 
+        document.getElementById('tip-amount').value = gorjetas.toFixed(2);
+        document.getElementById('tipModal').style.display = 'block'; 
+    }
     function closeTipModal() { document.getElementById('tipModal').style.display = 'none'; }
 
     function openRidesModal() {
