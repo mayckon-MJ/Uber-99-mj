@@ -30,7 +30,7 @@
         header {
             background: var(--secondary);
             color: white;
-            padding: 20px;
+            padding: none;
             border-radius: 15px;
             text-align: center;
             margin-bottom: 20px;
@@ -282,20 +282,126 @@
         .faturamento-actions { display: flex; gap: 8px; margin-top: 10px; }
         .btn-view { background: var(--info); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .btn-del-fat { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    
+    .btn-box-float {
+    text-align: center;
+}
+    /* Animação do círculo girando (Spinner) */
+.btn-sell.loading {
+    color: transparent !important;
+    position: relative;
+    pointer-events: none;
+}
+.btn-sell.loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-top: -8px;
+    margin-left: -8px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+    
+    
+    /* Adicione junto com os outros botões flutuantes */
+.btn-calc-float { background: #e67e22;
+    color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+/* Estilos para o switch (botão seletor) */
+.switch-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 15px 0;
+    background: #eee;
+    padding: 10px;
+    border-radius: 8px;
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc; transition: .4s; border-radius: 24px;
+}
+.switch input:checked + .slider { background-color: var(--primary); }
+.slider:before {
+    position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+    background-color: white; transition: .4s; border-radius: 50%;
+}
+.switch input:checked + .slider:before { transform: translateX(26px); }
+
+/* Grid de valores dentro do modal */
+.calc-resumo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.calc-box {
+    background: #eee;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* Adicione junto com os outros botões flutuantes */
+.btn-rides-float { background: var(--danger); font-size: 20px; }
+
+/* Botão pequeno de adicionar ao lado do label */
+.btn-mini-add {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1 style="margin:0">🚗 Caixa Uber 🚗</h1>
+        <img style="width: 370px; height: 150px; border-radius: 20px;" src="https://i.ibb.co/84BTVPpX/1781847916394.png" alt="logo">  
     </header>
 
     <div class="dashboard">
         <h3>Total em Caixa</h3>
         <p id="total-caixa">R$ 0,00</p>
         <h3 style="margin-top: 15px; font-size: 0.7em;">Gorjetas Uber</h3>
-        <p id="total-gorjetas" class="tip-display">R$ 0,00</p>
+        <p id="total-gorjetas" class="tip-display" style="cursor: pointer;" onclick="openTipModal()" title="Clique para editar"></p>
+        <h3 style="margin-top: 15px; font-size: 0.7em;">Total em Corridas</h3>
+        <p id="total-corridas-dashboard" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--danger);">R$ 0,00</p>
+
         <button class="btn-apply" onclick="aplicarFaturamento()">Aplicar</button>
         
         <div class="backup-controls">
@@ -306,10 +412,16 @@
     </div>
 
     <div class="controls">
+         <button class="btn-calc-float" onclick="openCalcModal()">
+             <img style="width: 40px; height: 40px;" src="https://i.ibb.co/jkjmXQPv/105094-removebg-preview.png" alt="Gojeta"></button>
+        <button class="btn-rides-float btn-add-float" onclick="openRidesModal()">🚗</button>
         <button class="btn-list-float" onclick="openFaturamentoModal()">📋</button>
-        <button class="btn-tip-float" onclick="openTipModal()">💎</button>
-        <button class="btn-box-float" onclick="openHistoryModal()">💰</button>
-        <button class="btn-add-float" onclick="openModal()">+</button>
+        <button class="btn-tip-float" onclick="openTipModal()"><img style="width: 45px; height: 45px;" src="https://i.ibb.co/HfWgKwZn/105073-removebg-preview.png" alt="Gojeta">             
+        </button>
+        <button class="btn-box-float" onclick="openHistoryModal()">
+    <img style="width: 45px; height: 45px;" src="https://i.ibb.co/bg6Fpdww/105075-removebg-preview.png" alt="Gojeta">
+</button>
+        <button class="btn-add-float" onclick="openModal()">+</button>      
     </div>
     <div style="clear: both;"></div>
 
@@ -328,6 +440,80 @@
         <button class="btn-clear" style="border:none; margin-top:5px" onclick="closeModal()">Cancelar</button>
     </div>
 </div>
+    <div id="calcModal" class="modal-full">
+    <div class="modal-full-content">
+        <div class="modal-header">
+            <button class="btn-back" onclick="closeCalcModal()">← Voltar</button>
+            <h2 style="margin:0">Calculadora de Corrida</h2>
+        </div>
+
+        <div class="switch-container">
+            <span>Vincular vendas de bombons a esta corrida?</span>
+            <label class="switch">
+                <input type="checkbox" id="calc-vincular" onchange="toggleVinculo(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="calc-resumo">
+            <div class="calc-box">
+                <small>Bombons</small>
+                <div id="calc-valor-bombons" style="font-weight:bold; font-size:1.2em;">R$ 0,00</div>
+            </div>
+            <div class="calc-box">
+                <small>Corrida Uber</small>
+                <div id="calc-valor-corrida-txt" style="font-weight:bold; font-size:1.2em;">R$ 0,00</div>
+            </div>
+        </div>
+
+        <div class="dashboard" style="background: var(--secondary); color: white; margin-bottom: 15px;">
+            <h3>SOMA TOTAL</h3>
+            <p id="calc-soma-total" style="color: var(--primary); margin: 5px 0 0;">R$ 0,00</p>
+        </div>
+
+<div class="faturamento-item" style="background: white;">
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+    <label style="font-size:0.9em; color:#666;">Valor da Corrida (R$):</label>
+    <button class="btn-mini-add" onclick="adicionarCorridaHistorico()">+</button>
+</div>
+<input type="number" id="calc-valor-corrida" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" oninput="calcularCorrida()">
+
+            <label style="font-size:0.9em; color:#666;">Valor Pago pelo Passageiro (R$):</label>
+            <input type="number" id="calc-valor-pago" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin: 5px 0 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+            
+            <button class="btn-apply" onclick="calcularTroco()">Calcular Troco</button>
+            
+            <div id="calc-resultado-troco" style="display:none; margin-top:15px; padding:15px; text-align:center; border-radius:8px; font-weight:bold; font-size:1.3em;"></div>
+        </div>
+    </div>
+</div>
+    
+    <div id="ridesModal" class="modal-full">
+    <div class="modal-full-content">
+        <div class="modal-header">
+            <button class="btn-back" onclick="closeRidesModal()">← Voltar</button>
+            <h2 style="margin:0">Corridas Realizadas</h2>
+        </div>
+
+        <div class="dashboard" style="background: var(--secondary); color: white;">
+            <h3 style="color: #ccc;">Faturamento das Corridas</h3>
+            <p id="total-corridas-modal" style="color: var(--danger);">R$ 0,00</p>
+        </div>
+
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th># Corrida</th>
+                    <th style="text-align:right">Valor</th>
+                    <th style="text-align:center">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="rides-body"></tbody>
+        </table>
+    </div>
+</div>
+
+
 
 <div id="tipModal" class="modal">
     <div class="modal-content">
@@ -390,6 +576,11 @@
     let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
     let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
     let faturamentosAplicados = JSON.parse(localStorage.getItem('uberFaturamentos_v2')) || [];
+    let calcVinculoAtivo = false;
+    let calcValorBombonsAcumulado = 0;
+    let listaCorridas = JSON.parse(localStorage.getItem('uberCorridas_v2')) || [];
+
+
 
     function renderProducts() {
         const list = document.getElementById('product-list');
@@ -405,8 +596,8 @@
                     <div class="product-details">
                         <h4>${p.nome}</h4>
                         <span class="stock-badge ${isLow}">Estoque: ${p.estoque}</span>
-                        <div style="margin-top:5px">
-                             <input type="number" step="0.50" id="price-${p.id}" value="${p.preco.toFixed(2)}" style="width:60px; padding:4px">
+                        <div style="margin-top:5px; font-weight: bold;">
+                        R$ <input type="number" step="0.50" id="price-${p.id}" value="${p.preco.toFixed(2)}" style="width:60px; padding:4px">
                         </div>
                     </div>
                     <button class="btn-sell" ${p.estoque <= 0 ? 'disabled' : ''} onclick="sell(${p.id}, this)">Vender</button>
@@ -416,11 +607,70 @@
         updateUI();
     }
 
+    function openCalcModal() {
+    document.getElementById('calcModal').style.display = 'block';
+    atualizarValoresCalculadora();
+}
+
+function closeCalcModal() {
+    document.getElementById('calcModal').style.display = 'none';
+}
+
+function toggleVinculo(ativado) {
+    calcVinculoAtivo = ativado;
+    if(!ativado) {
+        calcValorBombonsAcumulado = 0; // Limpa se for desativado
+    }
+    atualizarValoresCalculadora();
+}
+
+function calcularCorrida() {
+    atualizarValoresCalculadora();
+}
+
+function atualizarValoresCalculadora() {
+    const valorCorrida = parseFloat(document.getElementById('calc-valor-corrida').value) || 0;
+    const somaTotal = calcValorBombonsAcumulado + valorCorrida;
+    
+    document.getElementById('calc-valor-bombons').innerText = `R$ ${calcValorBombonsAcumulado.toFixed(2)}`;
+    document.getElementById('calc-valor-corrida-txt').innerText = `R$ ${valorCorrida.toFixed(2)}`;
+    document.getElementById('calc-soma-total').innerText = `R$ ${somaTotal.toFixed(2)}`;
+}
+
+function calcularTroco() {
+    const valorCorrida = parseFloat(document.getElementById('calc-valor-corrida').value) || 0;
+    const somaTotal = calcValorBombonsAcumulado + valorCorrida;
+    const valorPago = parseFloat(document.getElementById('calc-valor-pago').value) || 0;
+    const divResultado = document.getElementById('calc-resultado-troco');
+    
+    if (valorPago < somaTotal) {
+        divResultado.style.backgroundColor = '#ffcccc';
+        divResultado.style.color = 'var(--danger)';
+        divResultado.innerText = `Valor pago é insuficiente! Falta R$ ${(somaTotal - valorPago).toFixed(2)}`;
+    } else {
+        const troco = valorPago - somaTotal;
+        divResultado.style.backgroundColor = '#d4edda';
+        divResultado.style.color = 'var(--primary)';
+        divResultado.innerText = `Dar de Troco: R$ ${troco.toFixed(2)}`;
+    }
+    divResultado.style.display = 'block';
+}
+
+    
     function sell(id, btn) {
-        const p = produtos.find(i => i.id === id);
-        const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
-        
-        if(p.estoque > 0) {
+    const p = produtos.find(i => i.id === id);
+    const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
+    
+    if(p.estoque > 0 && btn && !btn.classList.contains('loading')) {
+        // 1. Ativa o círculo girando
+        btn.classList.add('loading');
+
+        setTimeout(() => {
+            // 2. Após 800ms, remove o círculo e mostra o joinha 👍
+            btn.classList.remove('loading');
+            btn.innerText = '👍';
+
+            // Executa a lógica padrão do sistema
             const card = document.getElementById(`card-${id}`);
             card.classList.add('flash-red');
             setTimeout(() => card.classList.remove('flash-red'), 300);
@@ -433,11 +683,23 @@
             }
             caixa.vendasPorProduto[p.nome].qtd += 1;
             caixa.vendasPorProduto[p.nome].total += precoAtual;
+            
+            if (calcVinculoAtivo) {
+    calcValorBombonsAcumulado += precoAtual;
+    atualizarValoresCalculadora();
+}
 
             save();
-            renderProducts();
-        }
+
+            // 3. Após mais 1 segundo com o 👍, o botão volta a dizer "Vender" e atualiza a tela
+            setTimeout(() => {
+                renderProducts();
+            }, 1000);
+
+        }, 800); // Tempo que o círculo fica girando (800 milissegundos)
     }
+}
+
 
     function aplicarFaturamento() {
         if(confirm("Deseja aplicar e zerar o caixa e as gorjetas?")) {
@@ -527,6 +789,10 @@
     }
 
     function updateUI() {
+        const totalCorridas = listaCorridas.reduce((sum, current) => sum + current, 0);
+        const displayDash = document.getElementById('total-corridas-dashboard');
+        if(displayDash) displayDash.innerText = `R$ ${totalCorridas.toFixed(2)}`;
+   
         const formatado = `R$ ${caixa.total.toFixed(2)}`;
         document.getElementById('total-caixa').innerText = formatado;
         
@@ -572,15 +838,15 @@
     }
 
     function addTip() {
-        const valor = parseFloat(document.getElementById('tip-amount').value);
-        if(valor > 0) {
-            gorjetas += valor;
-            localStorage.setItem('uberGorjetas_v2', gorjetas);
-            document.getElementById('tip-amount').value = '';
-            closeTipModal();
-            updateUI();
-        }
+    const valor = parseFloat(document.getElementById('tip-amount').value);
+    if(!isNaN(valor) && valor >= 0) {
+        gorjetas = valor; // Altera diretamente o valor em vez de somar
+        localStorage.setItem('uberGorjetas_v2', gorjetas);
+        closeTipModal();
+        updateUI();
     }
+}
+
 
     function resetTips() {
         if(confirm("Deseja zerar o total de gorjetas?")) {
@@ -693,8 +959,12 @@
         leitor.readAsText(arquivo);
     }
 
-    function openModal() { document.getElementById('productModal').style.display = 'block'; }
-    function closeModal() { 
+    function openTipModal() { 
+    document.getElementById('tip-amount').value = gorjetas.toFixed(2);
+    document.getElementById('tipModal').style.display = 'block'; 
+}
+
+       function closeModal() { 
         document.getElementById('productModal').style.display = 'none';
         document.getElementById('edit-id').value = '';
         document.getElementById('modal-title').innerText = "Novo Produto";
@@ -706,6 +976,63 @@
     function openTipModal() { document.getElementById('tipModal').style.display = 'block'; }
     function closeTipModal() { document.getElementById('tipModal').style.display = 'none'; }
 
+    function openRidesModal() {
+    document.getElementById('ridesModal').style.display = 'block';
+    renderRides();
+}
+
+function closeRidesModal() {
+    document.getElementById('ridesModal').style.display = 'none';
+}
+
+function adicionarCorridaHistorico() {
+    const inputCorrida = document.getElementById('calc-valor-corrida');
+    const valor = parseFloat(inputCorrida.value);
+
+    if (!isNaN(valor) && valor > 0) {
+        listaCorridas.push(valor);
+        localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
+        updateUI();
+        alert(`Corrida de R$ ${valor.toFixed(2)} adicionada com sucesso!`);
+        inputCorrida.value = '';
+        atualizarValoresCalculadora();
+    } else {
+        alert("Por favor, digite um valor válido para a corrida.");
+    }
+}
+
+function renderRides() {
+    const body = document.getElementById('rides-body');
+    const totalModal = document.getElementById('total-corridas-modal');
+    body.innerHTML = '';
+    
+    let total = 0;
+    listaCorridas.forEach((valor, index) => {
+        total += valor;
+        body.innerHTML += `
+            <tr>
+                <td>Corrida Nº ${index + 1}</td>
+                <td style="text-align:right; font-weight:bold;">R$ ${valor.toFixed(2)}</td>
+                <td style="text-align:center">
+                    <button class="btn-minus" style="background:var(--danger)" onclick="excluirCorrida(${index})">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    totalModal.innerText = `R$ ${total.toFixed(2)}`;
+}
+
+function excluirCorrida(index) {
+    if (confirm("Deseja apagar esta corrida do histórico?")) {
+        listaCorridas.splice(index, 1);
+        localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
+        renderRides();
+        updateUI();
+    }
+}
+
+    
     renderProducts();
 </script>
 </body>
