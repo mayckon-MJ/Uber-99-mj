@@ -27,15 +27,6 @@
 
         .container { max-width: 500px; margin: 0 auto; }
 
-        header {
-            background: var(--secondary);
-            color: white;
-            padding: none;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
         .dashboard {
             background: var(--white);
             padding: 20px;
@@ -279,9 +270,10 @@
         }
         .faturamento-meta { font-size: 0.8em; color: #888; margin-bottom: 5px; }
         .faturamento-values { display: flex; justify-content: space-between; align-items: center; }
-        .faturamento-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .faturamento-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .btn-view { background: var(--info); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .btn-del-fat { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-reactivate { background: #e67e22; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
     
     .btn-box-float {
     text-align: center;
@@ -384,21 +376,93 @@
     justify-content: center;
 }
 
-
+/* Estilos para os Alertas Customizados Bonitos */
+.custom-alert-container {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+}
+.custom-alert-box {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 12px;
+    width: 85%;
+    max-width: 380px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    text-align: center;
+    animation: alertShow 0.3s ease;
+}
+@keyframes alertShow {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.custom-alert-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: var(--secondary);
+}
+.custom-alert-msg {
+    font-size: 0.95em;
+    color: #555;
+    margin-bottom: 20px;
+    white-space: pre-line;
+    line-height: 1.4;
+}
+.custom-alert-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+.btn-alert-ok {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.btn-alert-cancel {
+    background: #ccc;
+    color: #333;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+/* Adicione este bloco antes do fechamento da tag </style> */
+.btn-hospedagem {
+    display: block;
+    text-align: center;
+    background-color: var(--info);
+    color: white;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin: 5px 0 10px 0;
+    font-size: 0.9em;
+}
+.btn-hospedagem:hover {
+    filter: brightness(0.9);
+    }
+    
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <img style="width: 370px; height: 150px; border-radius: 20px;" src="https://i.ibb.co/84BTVPpX/1781847916394.png" alt="logo">  
-    </header>
-
     <div class="dashboard">
         <h3>Total em Caixa</h3>
         <p id="total-caixa">R$ 0,00</p>
         <h3 style="margin-top: 15px; font-size: 0.7em;">Gorjetas Uber</h3>
-        <p id="total-gorjetas" class="tip-display" style="cursor: pointer;" onclick="openTipModal()" title="Clique para editar"></p>
+        <p id="total-gorjetas" class="tip-display" style="cursor: pointer;" onclick="openEditTipModal()" title="Clique para editar"></p>
         <h3 style="margin-top: 15px; font-size: 0.7em;">Total em Corridas</h3>
         <p id="total-corridas-dashboard" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--danger);">R$ 0,00</p>
 
@@ -434,6 +498,9 @@
         <input type="hidden" id="edit-id">
         <input type="text" id="new-name" placeholder="Nome do Produto">
         <input type="text" id="new-img" placeholder="Link da Imagem (URL)">
+
+         <a href="hospedagem.html" class="btn-hospedagem">Hospedagem</a>
+    
         <input type="number" id="new-price" step="0.50" placeholder="Preço de Venda (R$)">
         <input type="number" id="new-stock" placeholder="Quantidade em Estoque">
         <button id="btn-modal-save" class="btn-sell" style="width:100%; margin-top:10px" onclick="saveNewProduct()">Cadastrar</button>
@@ -444,13 +511,13 @@
     <div class="modal-full-content">
         <div class="modal-header">
             <button class="btn-back" onclick="closeCalcModal()">← Voltar</button>
-            <h2 style="margin:0">Calculadora de Corrida</h2>
+            <h2 style="margin:0; font-size: 20px;">Calculadora de Corrida</h2>
         </div>
 
         <div class="switch-container">
-            <span>Vincular vendas de bombons a esta corrida?</span>
+            <span>Vincular Vendas á esta corrida?</span>
             <label class="switch">
-                <input type="checkbox" id="calc-vincular" onchange="toggleVinculo(this.checked)">
+                <input type="checkbox" id="calc-vincular" checked onchange="toggleVinculo(this.checked)">
                 <span class="slider"></span>
             </label>
         </div>
@@ -460,6 +527,7 @@
                 <small>Bombons</small>
                 <div id="calc-valor-bombons" style="font-weight:bold; font-size:1.2em;">R$ 0,00</div>
             </div>
+                        
             <div class="calc-box">
                 <small>Corrida Uber</small>
                 <div id="calc-valor-corrida-txt" style="font-weight:bold; font-size:1.2em;">R$ 0,00</div>
@@ -469,22 +537,49 @@
         <div class="dashboard" style="background: var(--secondary); color: white; margin-bottom: 15px;">
             <h3>SOMA TOTAL</h3>
             <p id="calc-soma-total" style="color: var(--primary); margin: 5px 0 0;">R$ 0,00</p>
+            <a href="#" onclick="openQrModal(event)" style="display: inline-block; margin-top: 10px; text-decoration: none;">
+            <img src="https://i.ibb.co/M5h2Nr9Z/1781977990356.png" alt="Ver QR Code" style="width: 35px; height: 35px; vertical-align: middle;">
+            </a>
+             <div id="qrModal" class="modal">
+    <div class="modal-content" style="text-align: center; max-width: 300px;">
+        <h3 style="margin-top: 0; color: var(--secondary);">Meu PIX QR Code</h3>
+        
+        <img src="https://i.ibb.co/DDW7fBcj/IMG-20260315-111215.jpg" alt="QR Code PIX" style="width: 100%; max-width: 300px; border-radius: 8px; margin: 50px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        
+        <button class="btn-apply" onclick="closeQrModal()">Fechar</button>
+    </div>
+</div>
+
         </div>
 
 <div class="faturamento-item" style="background: white;">
-            <div style="display: flex; align-items: center; margin-bottom: 5px;">
-    <label style="font-size:0.9em; color:#666;">Valor da Corrida (R$):</label>
-    <button class="btn-mini-add" onclick="adicionarCorridaHistorico()">+</button>
-</div>
-<input type="number" id="calc-valor-corrida" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" oninput="calcularCorrida()">
 
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <label style="font-size:0.9em; color:#666;">Valor Total da Corrida (R$):</label>
+            </div>
+            <input type="number" id="calc-valor-corrida" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" oninput="calcularCorrida()">
+                       
             <label style="font-size:0.9em; color:#666;">Valor Pago pelo Passageiro (R$):</label>
             <input type="number" id="calc-valor-pago" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin: 5px 0 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
             
             <button class="btn-apply" onclick="calcularTroco()">Calcular Troco</button>
-            
-            <div id="calc-resultado-troco" style="display:none; margin-top:15px; padding:15px; text-align:center; border-radius:8px; font-weight:bold; font-size:1.3em;"></div>
+        <div id="calc-resultado-troco" style="display:none; margin-top:15px; padding:15px; text-align:center; border-radius:8px; font-weight:bold; font-size:1.3em;"></div>
         </div>
+   <hr style="border: 0; height: 5px; background: #00adb5; box-shadow: 0 0 10px #00adb5; margin: 25px 0;">
+
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+    <label style="font-size:0.9em; color:#666;">Valor Corrida (R$):</label>
+    <button class="btn-mini-add" onclick="adicionarCorridaLiquidaHistorico()">+</button>
+</div>
+<input type="number" id="calc-valor-liquido" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+
+<div style="display: flex; align-items: center; margin-bottom: 5px;">
+    <label style="font-size:0.9em; color:Blue;">Valor Gorjeta (R$):</label>
+    <button class="btn-mini-add" onclick="adicionarGorjetaCalculadora()">+</button>
+</div>
+<input type="number" id="calc-valor-gorjeta-campo" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+
+                        
     </div>
 </div>
     
@@ -492,7 +587,7 @@
     <div class="modal-full-content">
         <div class="modal-header">
             <button class="btn-back" onclick="closeRidesModal()">← Voltar</button>
-            <h2 style="margin:0">Corridas Realizadas</h2>
+            <h2 style="margin:0; font-size: 15px;">Corridas Realizadas</h2>
         </div>
 
         <div class="dashboard" style="background: var(--secondary); color: white;">
@@ -571,16 +666,68 @@
     </div>
 </div>
 
+<div id="customAlert" class="custom-alert-container">
+    <div class="custom-alert-box">
+        <div id="customAlertTitle" class="custom-alert-title">Aviso</div>
+        <div id="customAlertMsg" class="custom-alert-msg">Mensagem</div>
+        <div class="custom-alert-buttons">
+            <button id="customAlertBtnCancel" class="btn-alert-cancel" style="display:none;">Cancelar</button>
+            <button id="customAlertBtnOk" class="btn-alert-ok">OK</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let produtos = JSON.parse(localStorage.getItem('uberProd_v2')) || [];
     let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
     let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
     let faturamentosAplicados = JSON.parse(localStorage.getItem('uberFaturamentos_v2')) || [];
-    let calcVinculoAtivo = false;
+    let calcVinculoAtivo = true;
     let calcValorBombonsAcumulado = 0;
     let listaCorridas = JSON.parse(localStorage.getItem('uberCorridas_v2')) || [];
 
+    
+    function openQrModal(event) {
+    if(event) event.preventDefault(); // Evita que a página suba ao clicar no link <a>
+    document.getElementById('qrModal').style.display = 'block';
+}
 
+function closeQrModal() {
+    document.getElementById('qrModal').style.display = 'none';
+}
+    // Sistema de Alertas Estilizados Bonitos
+    function mostrarAviso(mensagem, titulo = "Aviso") {
+        document.getElementById('customAlertTitle').innerText = titulo;
+        document.getElementById('customAlertMsg').innerText = mensagem;
+        document.getElementById('customAlertBtnCancel').style.display = 'none';
+        document.getElementById('customAlert').style.display = 'block';
+        
+        return new Promise((resolve) => {
+            document.getElementById('customAlertBtnOk').onclick = function() {
+                document.getElementById('customAlert').style.display = 'none';
+                resolve(true);
+            };
+        });
+    }
+    
+
+    function mostrarConfirmacao(mensagem, titulo = "Confirmação") {
+        document.getElementById('customAlertTitle').innerText = titulo;
+        document.getElementById('customAlertMsg').innerText = mensagem;
+        document.getElementById('customAlertBtnCancel').style.display = 'block';
+        document.getElementById('customAlert').style.display = 'block';
+        
+        return new Promise((resolve) => {
+            document.getElementById('customAlertBtnOk').onclick = function() {
+                document.getElementById('customAlert').style.display = 'none';
+                resolve(true);
+            };
+            document.getElementById('customAlertBtnCancel').onclick = function() {
+                document.getElementById('customAlert').style.display = 'none';
+                resolve(false);
+            };
+        });
+    }
 
     function renderProducts() {
         const list = document.getElementById('product-list');
@@ -618,9 +765,6 @@ function closeCalcModal() {
 
 function toggleVinculo(ativado) {
     calcVinculoAtivo = ativado;
-    if(!ativado) {
-        calcValorBombonsAcumulado = 0; // Limpa se for desativado
-    }
     atualizarValoresCalculadora();
 }
 
@@ -702,34 +846,45 @@ function calcularTroco() {
 
 
     function aplicarFaturamento() {
-        if(confirm("Deseja aplicar e zerar o caixa e as gorjetas?")) {
-            const valorTotal = caixa.total + gorjetas;
-            const agora = new Date();
-            const dataStr = agora.toLocaleDateString('pt-BR');
-            const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-            
-            faturamentosAplicados.push({
-                id: Date.now(),
-                data: dataStr,
-                hora: horaStr,
-                valorTotal: valorTotal,
-                valorVendas: caixa.total,
-                valorGorjetas: gorjetas,
-                detalhesVendas: JSON.parse(JSON.stringify(caixa.vendasPorProduto))
-            });
+        mostrarConfirmacao("Deseja aplicar e zerar o caixa, as gorjetas e as corridas?").then((confirmado) => {
+            if (confirmado) {
+                // Calcula o total acumulado das corridas atuais antes de zerar
+                const totalCorridasAtual = listaCorridas.reduce((sum, current) => sum + (current.valor || 0), 0);
+                
+                // Agora soma os três valores: Vendas + Gorjetas + Corridas
+                const valorTotal = caixa.total + gorjetas + totalCorridasAtual;
+                
+                const agora = new Date();
+                const dataStr = agora.toLocaleDateString('pt-BR');
+                const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                
+                faturamentosAplicados.push({
+                    id: Date.now(),
+                    data: dataStr,
+                    hora: horaStr,
+                    valorTotal: valorTotal,
+                    valorVendas: caixa.total,
+                    valorGorjetas: gorjetas,
+                    valorCorridas: totalCorridasAtual, // Adicionado para guardar o valor das corridas
+                    detalhesVendas: JSON.parse(JSON.stringify(caixa.vendasPorProduto)),
+                    arrayCorridasDetalhado: JSON.parse(JSON.stringify(listaCorridas)) // Guarda o array detalhado das corridas para restaurar ou ver depois
+                });
 
-            caixa = { total: 0, vendasPorProduto: {} };
-            gorjetas = 0;
+                caixa = { total: 0, vendasPorProduto: {} };
+                gorjetas = 0;
+                listaCorridas = []; // Limpa a lista de corridas atual
 
-            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-            save();
-            localStorage.setItem('uberGorjetas_v2', gorjetas);
-            updateUI();
-            alert("Faturamento aplicado com sucesso!");
-        }
+                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+                localStorage.setItem('uberGorjetas_v2', gorjetas);
+                localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas)); // Salva a lista de corridas vazia
+                save();
+                updateUI();
+                mostrarAviso("Faturamento aplicado com sucesso!", "Sucesso");
+            }
+        });
     }
 
-    function openFaturamentoModal() {
+        function openFaturamentoModal() {
         const lista = document.getElementById('lista-faturamento');
         const totalGeralDisplay = document.getElementById('total-geral-hoje');
         lista.innerHTML = '';
@@ -737,6 +892,9 @@ function calcularTroco() {
 
         faturamentosAplicados.forEach(f => {
             somaGeral += f.valorTotal;
+            // Garante compatibilidade com registros antigos que não tinham corridas salvas
+            const corridasSalvas = f.valorCorridas || 0; 
+
             lista.innerHTML += `
                 <div class="faturamento-item">
                     <div class="faturamento-meta">${f.data} às ${f.hora}</div>
@@ -744,11 +902,13 @@ function calcularTroco() {
                         <span style="font-size: 1.2em; font-weight: bold; color: var(--primary)">R$ ${f.valorTotal.toFixed(2)}</span>
                         <div style="text-align: right; font-size: 0.85em; color: #666;">
                             Vendas: R$ ${f.valorVendas.toFixed(2)}<br>
-                            Gorjetas: R$ ${f.valorGorjetas.toFixed(2)}
+                            Gorjetas: R$ ${f.valorGorjetas.toFixed(2)}<br>
+                            Corridas: R$ ${corridasSalvas.toFixed(2)}
                         </div>
                     </div>
                     <div class="faturamento-actions">
                         <button class="btn-view" onclick="visualizarVendasFat(${f.id})">👁️ Visualizar</button>
+                        <button class="btn-reactivate" onclick="reativarFaturamento(${f.id})">🔄 Reativar</button>
                         <button class="btn-del-fat" onclick="excluirFaturamento(${f.id})">🗑️ Excluir</button>
                     </div>
                 </div>
@@ -759,21 +919,103 @@ function calcularTroco() {
         document.getElementById('faturamentoModal').style.display = 'block';
     }
 
+    
     function visualizarVendasFat(id) {
         const fat = faturamentosAplicados.find(f => f.id === id);
         let msg = `Resumo de Vendas (${fat.hora}):\n\n`;
+        
+        let temProdutos = false;
         for (let item in fat.detalhesVendas) {
-            msg += `${item}: ${fat.detalhesVendas[item].qtd}x - R$ ${fat.detalhesVendas[item].total.toFixed(2)}\n`;
+            msg += `• ${item}: ${fat.detalhesVendas[item].qtd}x - R$ ${fat.detalhesVendas[item].total.toFixed(2)}\n`;
+            temProdutos = true;
         }
-        alert(msg);
+        if(!temProdutos) msg += "• Nenhuma venda de produto registrada.\n";
+        
+        msg += `\n💎 Gorjetas: R$ ${(fat.valorGorjetas || 0).toFixed(2)}\n`;
+        
+        msg += `\n🚗 Histórico de Corridas:\n`;
+        if (fat.arrayCorridasDetalhado && fat.arrayCorridasDetalhado.length > 0) {
+            fat.arrayCorridasDetalhado.forEach((c, idx) => {
+                const vCorrida = typeof c === 'object' ? c.valor : c;
+                const hCorrida = typeof c === 'object' ? ` (${c.hora})` : '';
+                msg += `  - Corrida Nº ${idx + 1}: R$ ${vCorrida.toFixed(2)}${hCorrida}\n`;
+            });
+        } else if ((fat.valorCorridas || 0) > 0) {
+            msg += `  - Total unificado: R$ ${fat.valorCorridas.toFixed(2)}\n`;
+        } else {
+            msg += `  - Nenhuma corrida registrada.\n`;
+        }
+        
+        mostrarAviso(msg, `Detalhes do Faturamento`);
+    }
+
+    function reativarFaturamento(id) {
+        mostrarConfirmacao("Deseja reativar este faturamento? Os valores acumulados dele voltarão para a tela inicial somando-se ao caixa atual, e o estoque dos itens vendidos será devolvido (subtraído).").then((confirmado) => {
+            if (confirmado) {
+                const fat = faturamentosAplicados.find(f => f.id === id);
+                
+                // 1. Devolve os valores monetários
+                caixa.total += fat.valorVendas;
+                gorjetas += fat.valorGorjetas;
+                
+                // 2. Devolve os objetos das corridas detalhadas
+                if(fat.arrayCorridasDetalhado && fat.arrayCorridasDetalhado.length > 0) {
+                    listaCorridas = listaCorridas.concat(fat.arrayCorridasDetalhado);
+                } else if(fat.valorCorridas > 0) {
+                    const agora = new Date();
+                    listaCorridas.push({
+                        valor: fat.valorCorridas,
+                        data: fat.data,
+                        hora: fat.hora
+                    });
+                }
+                
+                // 3. Devolve os produtos no objeto 'caixa' atual e deduz o estoque correspondente
+                for (let nome in fat.detalhesVendas) {
+                    const itemSalvo = fat.detalhesVendas[nome];
+                    
+                    if (!caixa.vendasPorProduto[nome]) {
+                        caixa.vendasPorProduto[nome] = { 
+                            qtd: 0, 
+                            total: 0, 
+                            img: itemSalvo.img, 
+                            idOrigem: itemSalvo.idOrigem 
+                        };
+                    }
+                    caixa.vendasPorProduto[nome].qtd += itemSalvo.qtd;
+                    caixa.vendasPorProduto[nome].total += itemSalvo.total;
+                    
+                    // Ajusta estoque físico dos produtos ativos (vendeu no faturamento = sai do estoque agora)
+                    const p = produtos.find(item => item.id === itemSalvo.idOrigem);
+                    if (p) {
+                        p.estoque = Math.max(0, p.estoque - itemSalvo.qtd);
+                    }
+                }
+                
+                // 4. Remove este registro do histórico de acumulados
+                faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
+                
+                // 5. Salva as alterações
+                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+                localStorage.setItem('uberGorjetas_v2', gorjetas);
+                localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
+                save();
+                renderProducts();
+                closeFaturamentoModal();
+                
+                mostrarAviso("Valores reativados e restaurados na tela inicial com sucesso!", "Sucesso");
+            }
+        });
     }
 
     function excluirFaturamento(id) {
-        if(confirm("Deseja excluir este registro de faturamento?")) {
-            faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
-            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-            openFaturamentoModal();
-        }
+        mostrarConfirmacao("Deseja excluir este registro de faturamento?").then((confirmado) => {
+            if (confirmado) {
+                faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
+                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+                openFaturamentoModal();
+            }
+        });
     }
 
     function closeFaturamentoModal() {
@@ -781,15 +1023,17 @@ function calcularTroco() {
     }
 
     function limparFaturamentoAcumulado() {
-        if(confirm("Deseja zerar todo o histórico de faturamento?")) {
-            faturamentosAplicados = [];
-            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-            openFaturamentoModal();
-        }
+        mostrarConfirmacao("Deseja zerar todo o histórico de faturamento?").then((confirmado) => {
+            if (confirmado) {
+                faturamentosAplicados = [];
+                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+                openFaturamentoModal();
+            }
+        });
     }
 
     function updateUI() {
-        const totalCorridas = listaCorridas.reduce((sum, current) => sum + current, 0);
+        const totalCorridas = listaCorridas.reduce((sum, current) => sum + (current.valor || 0), 0);
         const displayDash = document.getElementById('total-corridas-dashboard');
         if(displayDash) displayDash.innerText = `R$ ${totalCorridas.toFixed(2)}`;
    
@@ -837,24 +1081,44 @@ function calcularTroco() {
         }
     }
 
-    function addTip() {
+    let modoEdicaoGorjeta = false; // Controla se vai substituir ou somar
+
+function addTip() {
     const valor = parseFloat(document.getElementById('tip-amount').value);
     if(!isNaN(valor) && valor >= 0) {
-        gorjetas = valor; // Altera diretamente o valor em vez de somar
+        if (modoEdicaoGorjeta) {
+            gorjetas = valor; // Substitui o valor quando clicado no texto
+        } else {
+            gorjetas += valor; // Continua somando quando usado o botão flutuante roxo
+        }
         localStorage.setItem('uberGorjetas_v2', gorjetas);
         closeTipModal();
         updateUI();
     }
 }
 
+function openEditTipModal() { 
+    modoEdicaoGorjeta = true; // Ativa modo de substituição direta
+    document.getElementById('tip-amount').value = gorjetas.toFixed(2);
+    document.getElementById('tipModal').style.display = 'block'; 
+}
+
+function openTipModal() { 
+    modoEdicaoGorjeta = false; // Ativa modo de soma (botão flutuante)
+    document.getElementById('tip-amount').value = '';
+    document.getElementById('tipModal').style.display = 'block'; 
+}
+
 
     function resetTips() {
-        if(confirm("Deseja zerar o total de gorjetas?")) {
-            gorjetas = 0;
-            localStorage.setItem('uberGorjetas_v2', gorjetas);
-            updateUI();
-            closeTipModal();
-        }
+        mostrarConfirmacao("Deseja zerar o total de gorjetas?").then((confirmado) => {
+            if (confirmado) {
+                gorjetas = 0;
+                localStorage.setItem('uberGorjetas_v2', gorjetas);
+                updateUI();
+                closeTipModal();
+            }
+        });
     }
 
     function saveNewProduct() {
@@ -891,11 +1155,13 @@ function calcularTroco() {
     }
 
     function deleteProduct(id) {
-        if(confirm("Excluir produto?")) {
-            produtos = produtos.filter(p => p.id !== id);
-            save();
-            renderProducts();
-        }
+        mostrarConfirmacao("Excluir produto?").then((confirmado) => {
+            if (confirmado) {
+                produtos = produtos.filter(p => p.id !== id);
+                save();
+                renderProducts();
+            }
+        });
     }
 
     function save() {
@@ -905,10 +1171,12 @@ function calcularTroco() {
     }
 
     function resetDay() {
-        if(confirm("Deseja zerar as vendas do dia?")) {
-            caixa = { total: 0, vendasPorProduto: {} };
-            save();
-        }
+        mostrarConfirmacao("Deseja zerar as vendas do dia?").then((confirmado) => {
+            if (confirmado) {
+                caixa = { total: 0, vendasPorProduto: {} };
+                save();
+            }
+        });
     }
 
     /* Novas Funções de Backup (Baixar) e Upload (Restaurar) */
@@ -937,22 +1205,24 @@ function calcularTroco() {
             try {
                 const dadosImportados = JSON.parse(e.target.result);
                 
-                if (confirm("Isto irá substituir todos os dados atuais do sistema pelo arquivo importado. Deseja continuar?")) {
-                    if (dadosImportados.produtos) produtos = dadosImportados.produtos;
-                    if (dadosImportados.caixa) caixa = dadosImportados.caixa;
-                    if (dadosImportados.gorjetas !== undefined) gorjetas = parseFloat(dadosImportados.gorjetas);
-                    if (dadosImportados.faturamentosAplicados) faturamentosAplicados = dadosImportados.faturamentosAplicados;
+                mostrarConfirmacao("Isto irá substituir todos os dados atuais do sistema pelo arquivo importado. Deseja continuar?").then((confirmado) => {
+                    if (confirmado) {
+                        if (dadosImportados.produtos) produtos = dadosImportados.produtos;
+                        if (dadosImportados.caixa) caixa = dadosImportados.caixa;
+                        if (dadosImportados.gorjetas !== undefined) gorjetas = parseFloat(dadosImportados.gorjetas);
+                        if (dadosImportados.faturamentosAplicados) faturamentosAplicados = dadosImportados.faturamentosAplicados;
 
-                    localStorage.setItem('uberProd_v2', JSON.stringify(produtos));
-                    localStorage.setItem('uberCaixa_v2', JSON.stringify(caixa));
-                    localStorage.setItem('uberGorjetas_v2', gorjetas);
-                    localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
+                        localStorage.setItem('uberProd_v2', JSON.stringify(produtos));
+                        localStorage.setItem('uberCaixa_v2', JSON.stringify(caixa));
+                        localStorage.setItem('uberGorjetas_v2', gorjetas);
+                        localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
 
-                    renderProducts();
-                    alert("Dados restaurados com sucesso!");
-                }
+                        renderProducts();
+                        mostrarAviso("Dados restaurados com sucesso!", "Sucesso");
+                    }
+                });
             } catch (err) {
-                alert("Erro ao ler o arquivo de backup. Certifique-se de escolher um arquivo .json válido gerado pelo sistema.");
+                mostrarAviso("Erro ao ler o arquivo de backup. Certifique-se de escolher um arquivo .json válido gerado pelo sistema.", "Erro");
             }
             event.target.value = ''; // Limpa o input
         };
@@ -995,11 +1265,54 @@ function adicionarCorridaHistorico() {
         listaCorridas.push(valor);
         localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
         updateUI();
-        alert(`Corrida de R$ ${valor.toFixed(2)} adicionada com sucesso!`);
+        mostrarAviso(`Corrida de R$ ${valor.toFixed(2)} adicionada com sucesso!`, "Sucesso");
         inputCorrida.value = '';
         atualizarValoresCalculadora();
     } else {
-        alert("Por favor, digite um valor válido para a corrida.");
+        mostrarAviso("Por favor, digite um valor válido para a corrida.", "Aviso");
+    }
+}
+    
+    // NOVA FUNÇÃO: ADICIONAR VALOR LÍQUIDO DIRETO NO RELATÓRIO
+function adicionarCorridaLiquidaHistorico() {
+    const inputLiquido = document.getElementById('calc-valor-liquido');
+    const valor = parseFloat(inputLiquido.value);
+
+    if (!isNaN(valor) && valor > 0) {
+        const agora = new Date();
+        const dataStr = agora.toLocaleDateString('pt-BR');
+        const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+        // Modificado para salvar um objeto com valor, data e hora
+        listaCorridas.push({
+            valor: valor,
+            data: dataStr,
+            hora: horaStr
+        });
+        
+        localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
+        updateUI();
+        mostrarAviso(`Ganho real de R$ ${valor.toFixed(2)} adicionado ao relatório!`, "Sucesso");
+        inputLiquido.value = '';
+    } else {
+        mostrarAviso("Por favor, digite um valor ganho válido.", "Aviso");
+    }
+}
+
+
+
+function adicionarGorjetaCalculadora() {
+    const inputGorjeta = document.getElementById('calc-valor-gorjeta-campo');
+    const valor = parseFloat(inputGorjeta.value);
+
+    if (!isNaN(valor) && valor > 0) {
+        gorjetas += valor; // Soma e acrescenta ao valor acumulado existente
+        localStorage.setItem('uberGorjetas_v2', gorjetas);
+        updateUI();
+        mostrarAviso(`Gorjeta de R$ ${valor.toFixed(2)} acrescentada com sucesso!`, "Sucesso");
+        inputGorjeta.value = '';
+    } else {
+        mostrarAviso("Por favor, digite um valor válido para a gorjeta.", "Aviso");
     }
 }
 
@@ -1009,14 +1322,23 @@ function renderRides() {
     body.innerHTML = '';
     
     let total = 0;
-    listaCorridas.forEach((valor, index) => {
+    listaCorridas.forEach((corrida, index) => {
+        // Garante compatibilidade caso haja alguma corrida antiga salva apenas como número
+        const valor = typeof corrida === 'object' ? corrida.valor : corrida;
+        const dataHora = typeof corrida === 'object' ? `${corrida.data} às ${corrida.hora}` : 'Data n/d';
+        
         total += valor;
         body.innerHTML += `
             <tr>
-                <td>Corrida Nº ${index + 1}</td>
-                <td style="text-align:right; font-weight:bold;">R$ ${valor.toFixed(2)}</td>
-                <td style="text-align:center">
-                    <button class="btn-minus" style="background:var(--danger)" onclick="excluirCorrida(${index})">🗑️</button>
+                <td>
+                    <div>Corrida Nº ${index + 1}</div>
+                    <small style="color: #888; font-size: 0.8em;">${dataHora}</small>
+                </td>
+                <td style="text-align:right; font-weight:bold; vertical-align: middle;">R$ ${valor.toFixed(2)}</td>
+                <td style="text-align:center; vertical-align: middle;">
+                    <button class="btn-minus" style="background:none; border:none; width:auto; height:auto; cursor:pointer;" onclick="excluirCorrida(${index})">
+                        <img src="https://i.ibb.co/Q7pbFfwN/106591-removebg-preview.png" style="width:40px; height:40px; object-fit:contain;" alt="Excluir">
+                    </button>
                 </td>
             </tr>
         `;
@@ -1025,13 +1347,16 @@ function renderRides() {
     totalModal.innerText = `R$ ${total.toFixed(2)}`;
 }
 
+    
 function excluirCorrida(index) {
-    if (confirm("Deseja apagar esta corrida do histórico?")) {
-        listaCorridas.splice(index, 1);
-        localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-        renderRides();
-        updateUI();
-    }
+    mostrarConfirmacao("Deseja apagar esta corrida do histórico?").then((confirmado) => {
+        if (confirmado) {
+            listaCorridas.splice(index, 1);
+            localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
+            renderRides();
+            updateUI();
+        }
+    });
 }
 
     
