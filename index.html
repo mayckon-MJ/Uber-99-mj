@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -436,8 +437,8 @@
     font-weight: bold;
     cursor: pointer;
 }
-/* Adicione este bloco antes do fechamento da tag </style> */
-.btn-hospedagem {
+    
+    .btn-hospedagem {
     display: block;
     text-align: center;
     background-color: var(--info);
@@ -449,9 +450,7 @@
     margin: 5px 0 10px 0;
     font-size: 0.9em;
 }
-.btn-hospedagem:hover {
-    filter: brightness(0.9);
-    }
+
     
     </style>
 </head>
@@ -567,8 +566,8 @@
         </div>
    <hr style="border: 0; height: 5px; background: #00adb5; box-shadow: 0 0 10px #00adb5; margin: 25px 0;">
 
-    <div style="display: flex; align-items: center; margin-bottom: 5px;">
-    <label style="font-size:0.9em; color:#666;">Valor Corrida (R$):</label>
+<div style="display: flex; align-items: center; margin-bottom: 5px;">
+    <label style="font-size:0.9em; color:Blue;">Valor Corrida (R$):</label>
     <button class="btn-mini-add" onclick="adicionarCorridaLiquidaHistorico()">+</button>
 </div>
 <input type="number" id="calc-valor-liquido" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
@@ -652,11 +651,11 @@
     <div class="modal-full-content">
         <div class="modal-header">
             <button class="btn-back" onclick="closeFaturamentoModal()">← Voltar</button>
-            <h2 style="margin:0">Faturamento Acumulado</h2>
+            <h2 style="margin:0; font-size: 15px;">Faturamento Acumulado</h2>
         </div>
 
         <div class="dashboard">
-            <h3>Total Geral de Hoje</h3>
+            <h3>Ganhos Desse Mês</h3>
             <p id="total-geral-hoje">R$ 0,00</p>
         </div>
 
