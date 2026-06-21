@@ -71,7 +71,7 @@
             border: none;
             padding: 10px 20px;
             border-radius: 8px;
-            margin-top: 15px;
+            margin-top: 5px;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
@@ -95,7 +95,7 @@
             font-size: 0.9em;
         }
 
-        .product-card {
+                .product-card {
             background: var(--white);
             border-radius: 12px;
             padding: 15px;
@@ -105,8 +105,27 @@
             gap: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             position: relative;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.2s; /* Adicionado transform na transição */
+            user-select: none;
+            /* touch-action: none;  <-- REMOVA OU COMENTE ESTA LINHA */
         }
+
+        /* ADICIONE ESTA NOVA CLASSE JUNTO DAS OUTRAS DE ARRASTO */        
+            .product-card.ready-to-drag {
+            transform: scale(1.02);
+            opacity: 0.8;
+            touch-action: pan-y; /* Permite que a tela role verticalmente enquanto arrasta */
+            position: relative;
+        }
+
+
+        .product-card.dragging {
+            opacity: 0.6;
+            background: #e8f8f0;
+            border: 2px dashed var(--primary);
+        }
+
+
 
         /* Animação de piscar vermelho */
         .flash-red {
@@ -559,7 +578,106 @@
     color: var(--primary);
     font-size: 0.95em;
 }
+    
+    /* Botão de Ativar/Desativar Arrasto no fim da lista */
+.btn-toggle-drag {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: background-color 0.3s;
+}
+.btn-toggle-drag.disabled {
+    background-color: var(--danger);
+}
+.btn-toggle-drag.enabled {
+    background-color: var(--primary);
+}
 
+/* Container posicionado na metade (centro) da altura, mas colado no canto esquerdo */
+.frase-container {
+    position: absolute;
+    top: 50%; /* Alinha o topo do bloco no centro vertical */
+    left: 6px; /* Mantém colado no lado esquerdo */
+    transform: translateY(-50%); /* Ajusta o eixo para o centro vertical exato */
+    color: blue;
+    font-weight: bold;
+    font-size: 14px; /* Frase menor */
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9); /* Sombra para leitura */
+    display: flex;
+    flex-direction: column; /* Joga o "Gorjeta?" para baixo */
+    align-items: flex-start; /* Alinha o texto à esquerda */
+    gap: 2px;
+    pointer-events: none;
+    line-height: 1.2;
+}
+
+
+/* Esconde as palavras no início */
+.palavra {
+    opacity: 0;
+    animation: surgirPalavra 0.4s forwards;
+}
+
+/* Animação de surgimento */
+@keyframes surgirPalavra {
+    to {
+        opacity: 1;
+    }
+}
+
+/* Tempos de atraso (delays) para o efeito palavra por palavra */
+.p1 { animation-delay: 0.4s; }
+.p2 { animation-delay: 0.9s; }
+.p3 { animation-delay: 1.3s; }
+.p4 { animation-delay: 1.7s; }
+.p5 { 
+    animation-delay: 2.2s; 
+    color: red; /* Mantém o Gorjeta destacado em amarelo */
+}
+
+    .frase-container2 {
+    position: absolute;
+    top: 215px; /* Alinha o topo do bloco no centro vertical */
+    left: 245px; /* Mantém colado no lado esquerdo */
+    transform: translateY(-50%); /* Ajusta o eixo para o centro vertical exato */
+    color: blue;
+    font-weight: bold;
+    font-size: 40px; /* Frase menor */
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9); /* Sombra para leitura */
+    display: flex;
+    flex-direction: column; /* Joga o "Gorjeta?" para baixo */
+    align-items: flex-start; /* Alinha o texto à esquerda */
+    gap: 2px;
+    pointer-events: auto;
+    line-height: 1.2;
+}
+
+    
+ .frase-container3 {
+    position: absolute;
+    top: 30%; /* Alinha o topo do bloco no centro vertical */
+    left: 10%; /* Mantém colado no lado esquerdo */
+    transform: translateY(-50%); /* Ajusta o eixo para o centro vertical exato */
+    color: blue;
+    font-weight: bold;
+    font-size: 40px; /* Frase menor */
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9); /* Sombra para leitura */
+    display: flex;
+    flex-direction: column; /* Joga o "Gorjeta?" para baixo */
+    align-items: flex-start; /* Alinha o texto à esquerda */
+    gap: 2px;
+    pointer-events: auto;
+    line-height: 1.2;
+}
     </style>
 </head>
 <body>
@@ -595,8 +713,11 @@
         <button class="btn-add-float" onclick="openModal()">+</button>      
     </div>
     <div style="clear: both;"></div>
-
+    
     <div id="product-list"></div>
+    <button id="btn-drag-control" class="btn-toggle-drag disabled" onclick="toggleDragMode()">🔒 Organizar Lista (Desativado)</button>
+</div>
+
 </div>
 
 <div id="productModal" class="modal">
@@ -647,17 +768,39 @@
             <a href="#" onclick="openQrModal(event)" style="display: inline-block; margin-top: 10px; text-decoration: none;">
             <img src="https://i.ibb.co/M5h2Nr9Z/1781977990356.png" alt="Ver QR Code" style="width: 35px; height: 35px; vertical-align: middle;">
             </a>
-             <div id="qrModal" class="modal">
+           <div id="qrModal" class="modal">
     <div class="modal-content" style="text-align: center; max-width: 300px;">
-        <h3 style="margin-top: 0; color: var(--secondary);">Meu PIX QR Code</h3>
+        <!-- CONTAINER DO VÍDEO COM A FRASE POR CIMA -->
+        <div style="position: relative; width: 100%; max-width: 300px; margin: 0 auto;">
+            <video src="Video-Gorjeta4.mp4" autoplay loop muted playsinline style="width: 100%; border-radius: 8px; display: block;"></video>
+            
+            <!-- FRASE PALAVRA POR PALAVRA -->
+     <div class="frase-container2" style="font-size:30; text-align: center; cursor: pointer;" onclick="toggleMusica()">
+     😅
+     <button id="btn-parar-musica" style="display: block; margin: 5px auto 0; background: none; border: none; font-size: 10px; cursor: pointer;">⏸️</button>
+     </div>
+     <audio id="musica-qrcode" src="1.mp3" loop></audio>
+
+           
+            <div class="frase-container">
+                <span style="font-size: 19px;" class="palavra p1"></span>
+                <span style="font-size: 19px;" class="palavra p2"></span>
+                <span style="font-size: 19px;" class="palavra p3"></span>
+                <span style="font-size: 19px;" class="palavra p4"></span>
+                <span style="background: blue; padding: 4px; border-radius: 16px; font-size: 20px;" class="palavra p5"></span>
+            </div>
+        </div>
+           <h3 style="margin-top: 0; color: var(--secondary);">Meu PIX QR Code</h3>
         
-        <img src="https://i.ibb.co/DDW7fBcj/IMG-20260315-111215.jpg" alt="QR Code PIX" style="width: 100%; max-width: 300px; border-radius: 8px; margin: 50px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <img src="https://i.ibb.co/DDW7fBcj/IMG-20260315-111215.jpg" alt="QR Code PIX" style="width: 100%; max-width: 300px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         
         <button class="btn-apply" onclick="closeQrModal()">Fechar</button>
     </div>
-</div>
+       </div>
 
-        </div>
+
+</div>
+</div>
 
 <div class="faturamento-item" style="background: white;">
 
@@ -675,16 +818,16 @@
    <hr style="border: 0; height: 5px; background: #00adb5; box-shadow: 0 0 10px #00adb5; margin: 25px 0;">
 
 <div style="display: flex; align-items: center; margin-bottom: 5px;">
-    <label style="font-size:0.9em; color:Blue;">Valor Corrida (R$):</label>
+    <label style="margin-left: 20px; font-size:0.9em; color:Blue;">Valor Corrida (R$):</label>
     <button class="btn-mini-add" onclick="adicionarCorridaLiquidaHistorico()">+</button>
 </div>
-<input type="number" id="calc-valor-liquido" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+<input type="number" id="calc-valor-liquido" step="0.10" placeholder="0,00" style="margin-left: 20px; width:350px; padding:8px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
 
 <div style="display: flex; align-items: center; margin-bottom: 5px;">
-    <label style="font-size:0.9em; color:Blue;">Valor Gorjeta (R$):</label>
+    <label style="margin-left: 20px; font-size:0.9em; color:Blue;">Valor Gorjeta (R$):</label>
     <button class="btn-mini-add" onclick="adicionarGorjetaCalculadora()">+</button>
 </div>
-<input type="number" id="calc-valor-gorjeta-campo" step="0.10" placeholder="0,00" style="width:100%; padding:12px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+<input type="number" id="calc-valor-gorjeta-campo" step="0.10" placeholder="0,00" style="margin-left: 20px; width:350px; padding:8px; margin-bottom: 15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
 
                         
     </div>
@@ -852,6 +995,7 @@
     </div>
 </div>
     <script>
+  
     // --- ESTADO GLOBAL DA APLICAÇÃO ---
     let produtos = [];
     let vendas = {};
@@ -859,6 +1003,8 @@
     let historicoFaturamento = []; 
     let historicoCorridas = [];
     let historicoAnual = [];
+    let arrastoPermitido = false; // <-- ADICIONE ESTA LINHA AQUI
+
 
     // --- ALERTAS E CONFIRMAÇÕES CUSTOMIZADAS ---
     function mostrarAlerta(mensagem, titulo = "Aviso") {
@@ -1035,8 +1181,8 @@
         document.getElementById('total-anual-acumulado').innerText = formatarDinheiro(totalAnual);
     }
 
-    // --- PRODUTOS E VENDAS ---
-    function render() {
+    
+        function render() {
         const list = document.getElementById('product-list');
         list.innerHTML = '';
 
@@ -1044,6 +1190,59 @@
             const card = document.createElement('div');
             card.className = 'product-card';
             card.id = `product-card-${p.id}`;
+
+            // Só ativa o comportamento de arrasto se o botão estiver VERDE (true)
+            if (arrastoPermitido) {
+                card.setAttribute('draggable', 'true');
+
+                // Eventos para Computador (Mouse)
+                card.addEventListener('dragstart', () => card.classList.add('dragging'));
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    salvarNovaOrdem();
+                });
+
+                // Eventos para Celular (Touch)
+                card.addEventListener('touchstart', (e) => {
+                    card.classList.add('ready-to-drag');
+                    card.classList.add('dragging');
+                }, {passive: true});
+                
+                
+                card.addEventListener('touchmove', (e) => {
+                    const touch = e.touches[0];
+                    const listContainer = document.getElementById('product-list');
+                    const afterElement = getDragAfterElement(listContainer, touch.clientY);
+                    const draggingElement = document.querySelector('.dragging');
+                    
+                    // Rola a tela para cima se arrastar o produto perto do topo
+                    if (touch.clientY < 100) {
+                        window.scrollBy(0, -40);
+                    }
+                    // Rola a tela para baixo se arrastar perto do fim da tela
+                    if (window.innerHeight - touch.clientY < 100) {
+                        window.scrollBy(0, 40);
+                    }
+
+                    if (draggingElement) {
+                        if (afterElement == null) {
+                            listContainer.appendChild(draggingElement);
+                        } else {
+                            listContainer.insertBefore(draggingElement, afterElement);
+                        }
+                    }
+                }, {passive: true});
+
+
+                card.addEventListener('touchend', () => {
+                    card.classList.remove('ready-to-drag');
+                    card.classList.remove('dragging');
+                    salvarNovaOrdem();
+                });
+            } else {
+                // Se estiver vermelho, garante que o navegador não tente arrastar nada nativamente
+                card.setAttribute('draggable', 'false');
+            }
 
             const isLow = p.estoque <= 2;
             const btnDisabled = p.estoque <= 0 ? 'disabled' : '';
@@ -1062,6 +1261,49 @@
             list.appendChild(card);
         });
     }
+            
+    // Monitora o movimento do arrasto dentro da lista
+    document.getElementById('product-list').addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(document.getElementById('product-list'), e.clientY);
+        const draggingElement = document.querySelector('.dragging');
+        if (afterElement == null) {
+            document.getElementById('product-list').appendChild(draggingElement);
+        } else {
+            document.getElementById('product-list').insertBefore(draggingElement, afterElement);
+        }
+    });
+
+    // Função auxiliar para descobrir se o card está em cima/meio de outro
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.product-card:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Salva a nova ordem visual diretamente na memória (localStorage)
+    function salvarNovaOrdem() {
+        const novosProdutos = [];
+        const cards = document.querySelectorAll('.product-card');
+        
+        cards.forEach(card => {
+            const id = card.id.replace('product-card-', '');
+            const p = produtos.find(prod => prod.id == id);
+            if (p) novosProdutos.push(p);
+        });
+        
+        produtos = novosProdutos;
+        localStorage.setItem('uber_produtos', JSON.stringify(produtos));
+    }
+
 
     function vender(id) {
         const p = produtos.find(prod => prod.id === id);
@@ -1082,6 +1324,22 @@
             }, 350);
         }
     }
+
+    // ADICIONE ESTA NOVA FUNÇÃO PARA CONTROLAR O BOTÃO VERDE/VERMELHO
+    function toggleDragMode() {
+        arrastoPermitido = !arrastoPermitido;
+        const btn = document.getElementById('btn-drag-control');
+        
+        if (arrastoPermitido) {
+            btn.className = 'btn-toggle-drag enabled';
+            btn.innerHTML = '🔓 Organizar Lista (Ativado)';
+        } else {
+            btn.className = 'btn-toggle-drag disabled';
+            btn.innerHTML = '🔒 Organizar Lista (Desativado)';
+        }
+        render(); // Renderiza novamente para aplicar ou remover as travas de arrasto
+    }
+
 
     function saveNewProduct() {
         const id = document.getElementById('edit-id').value;
@@ -1644,9 +1902,37 @@
         }
     }
 
-    function openQrModal(e) { e.preventDefault(); document.getElementById('qrModal').style.display = 'block'; }
-    function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
+    function openQrModal(e) { 
+    e.preventDefault(); 
+    document.getElementById('qrModal').style.display = 'block'; 
+    // Toca a música ao abrir o QR Code
+    document.getElementById('musica-qrcode').play();
+}
+
+function closeQrModal() { 
+    document.getElementById('qrModal').style.display = 'none'; 
+    // Pausa a música e reseta o botão para o ícone correto ao fechar
+    const musica = document.getElementById('musica-qrcode');
+    musica.pause();
+    document.getElementById('btn-parar-musica').innerText = "⏸️";
+}
+
+
+function toggleMusica() {
+    const musica = document.getElementById('musica-qrcode');
+    const botao = document.getElementById('btn-parar-musica');
     
+    if (musica.paused) {
+        musica.play().catch(err => console.log("Erro ao tocar:", err));
+        botao.innerText = "⏸️";
+    } else {
+        musica.pause();
+        botao.innerText = "▶️";
+    }
+}
+
+
+   
     // Função para abrir o novo modal organizado com os produtos vendidos
 function abrirModalComprasPorHistorico(id) {
     const item = historicoFaturamento.find(i => i.id === id);
