@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <title>Meu Caixa Uber - Estoque e Vendas</title>
     <style>
         :root {
@@ -678,6 +679,60 @@
     pointer-events: auto;
     line-height: 1.2;
 }
+
+          /* --- ESTILOS DO MODAL SCANNER FULLSCREEN --- */
+        .modal-scanner-full {
+            display: none;
+            position: fixed;
+            z-index: 500;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: #121212;
+            overflow-y: auto;
+            box-sizing: border-box;
+            padding: 15px;
+            text-align: center;
+        }
+        .video-scanner {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+            margin-top: 10px;
+            background: #222;
+        }
+        .status-scanner {
+            margin: 15px 0;
+            color: #aaa;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        .cor-vermelha { color: #ff5252 !important; font-weight: bold; }
+        .cor-amarela { color: #ffd740 !important; font-weight: bold; }
+        .cor-verde { color: #69f0ae !important; font-weight: bold; }
+
+        /* Alerta Flutuante Interno do Scanner */
+        .alert-scanner-box {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #222;
+            padding: 20px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            text-align: left;
+            border: 2px solid #333;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 600;
+            color: white;
+        }
+        .alert-scanner-box h3 { margin-top: 0; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; font-size: 1.1em; }
+        .alert-scanner-box p { margin: 10px 0; font-size: 14px; }
+        .alert-scanner-buttons { display: flex; justify-content: space-between; margin-top: 15px; gap: 8px; }
+        .alert-scanner-buttons button { flex: 1; padding: 10px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
+        .btn-scan-ok { background: var(--primary); color: white; }
+        .btn-scan-arq { background: #616161; color: white; }
+      
     </style>
 </head>
 <body>
@@ -818,7 +873,7 @@
 
         
    <hr style="border: 0; height: 5px; background: #00adb5; box-shadow: 0 0 10px #00adb5; margin: 25px 0;">
-<a href="Escanear.html" style="
+<a href="#" onclick="abrirModalScanner(event)" style="
     display: inline-block;
     padding: 14px 28px;
     font-family: Arial, sans-serif;
@@ -833,8 +888,39 @@
     transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
 ">
-    Bater Foto e Salvar
+    Escanear
 </a>
+<div id="modalScanner" class="modal-full">
+    <div class="modal-full-content">
+        <div class="modal-header">
+            <button class="btn-back" onclick="fecharModalScanner()">← Voltar</button>
+            <h2 style="margin:0; font-size: 18px;">Escanear Corrida Uber</h2>
+        </div>
+
+        <video id="scan-video" class="video-scanner" autoplay playsinline></video>
+        <br>
+        <button class="btn-apply" style="max-width: 400px; margin: 10px auto;" onclick="capturarEFotografarOCR()">Bater Foto e Analisar</button>
+        
+        <canvas id="scan-canvas" style="display:none;"></canvas>
+        <p class="status-scanner">Status: <span id="scan-status-text">Aguardando comando...</span></p>
+    </div>
+</div>
+
+<div id="alertScannerBox" class="alert-scanner-box">
+    <h3>Resultado do Scanner</h3>
+    <p>Valor Bruto: <span id="scan-lbl-valor" style="color: var(--primary); font-weight: bold;">R$ 0,00</span></p>
+    <p>Km Buscar: <span id="scan-lbl-km-buscar">0.0 km</span></p>
+    <p>Km Levar: <span id="scan-lbl-km-levar">0.0 km</span></p>
+    <p>Km Total: <span id="scan-lbl-km-total" class="cor-vermelha">0.0 km</span></p>
+    <p style="border-top: 1px dashed #444; padding-top: 10px;">
+        R$ por Km: <span id="scan-lbl-r-km">R$ 0,00/km</span>
+    </p>
+    <div class="alert-scanner-buttons">
+        <button class="btn-scan-ok" onclick="confirmarSalvarScanner(false)">OK (Salvar)</button>
+        <button class="btn-scan-arq" onclick="confirmarSalvarScanner(true)">Arquivar</button>
+    </div>
+</div>
+
 
         
 <div style="display: flex; align-items: center; margin-bottom: 5px;">
@@ -2028,6 +2114,154 @@ function abrirModalComprasPorHistorico(id) {
     // Abre o novo modal na tela
     document.getElementById('comprasModal').style.display = 'block';
 }
+
+      // --- SISTEMA INTEGRADO DE SCANNER OCR ---
+    let scanStream = null;
+    let dadosScanTemporarios = null;
+
+    function abrirModalScanner(e) {
+        if(e) e.preventDefault();
+        document.getElementById('modalScanner').style.display = 'block';
+        document.getElementById('scan-status-text').innerText = "Iniciando câmera...";
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                scanStream = stream;
+                document.getElementById('scan-video').srcObject = stream;
+                document.getElementById('scan-status-text').innerText = "Câmera pronta.";
+            })
+            .catch(err => {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        scanStream = stream;
+                        document.getElementById('scan-video').srcObject = stream;
+                        document.getElementById('scan-status-text').innerText = "Câmera padrão pronta.";
+                    })
+                    .catch(e => {
+                        document.getElementById('scan-status-text').innerText = "Erro ao acessar a câmera.";
+                    });
+            });
+    }
+
+    function fecharModalScanner() {
+        document.getElementById('modalScanner').style.display = 'none';
+        document.getElementById('alertScannerBox').style.display = 'none';
+        if (scanStream) {
+            scanStream.getTracks().forEach(track => track.stop());
+            scanStream = null;
+        }
+    }
+
+    function capturarEFotografarOCR() {
+        document.getElementById('scan-status-text').innerText = "Analisando imagem...";
+        const videoEl = document.getElementById('scan-video');
+        const canvasEl = document.getElementById('scan-canvas');
+        
+        if(!videoEl.videoWidth) {
+            document.getElementById('scan-status-text').innerText = "Aguarde a câmera carregar.";
+            return;
+        }
+
+        const context = canvasEl.getContext('2d');
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+        
+        const imagemData = canvasEl.toDataURL('image/png');
+
+        Tesseract.recognize(imagemData, 'por')
+            .then(({ data: { text } }) => {
+                document.getElementById('scan-status-text').innerText = "Leitura finalizada!";
+                analisarTextoDoApp(text);
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('scan-status-text').innerText = "Erro na leitura digital.";
+            });
+    }
+
+    function analisarTextoDoApp(textoBruto) {
+        // Captura o Valor (Ex: R$ 14,60)
+        const regexValor = /R\$\s?(\d+[\.,]\d{2})/i;
+        const matchValor = textoBruto.match(regexValor);
+        let valorFloat = 0.0;
+        let valorTexto = "R$ 0,00";
+
+        if (matchValor) {
+            valorTexto = matchValor[0];
+            valorFloat = parseFloat(matchValor[1].replace(',', '.'));
+        }
+
+        // Captura os quilômetros dentro dos parênteses (Ex: (9.7 km) e (2.7 km))
+        const regexParentesesKm = /\(\s*(\d+[\.,]\d+)\s*km\s*\)/gi;
+        let kms = [];
+        let match;
+        
+        while ((match = regexParentesesKm.exec(textoBruto)) !== null) {
+            kms.push(parseFloat(match[1].replace(',', '.')));
+        }
+
+        let kmBuscar = kms[0] || 0.0;
+        let kmLevar = kms[1] || 0.0;
+        let kmTotal = kmBuscar + kmLevar;
+        let rPorKm = kmTotal > 0 ? (valorFloat / kmTotal) : 0.0;
+
+        // Armazena temporariamente os valores processados
+        dadosScanTemporarios = {
+            valorFloat: valorFloat,
+            kmTotal: kmTotal,
+            rPorKm: rPorKm
+        };
+
+        // Alimenta o Alerta Customizado
+        document.getElementById('scan-lbl-valor').innerText = valorTexto;
+        document.getElementById('scan-lbl-km-buscar').innerText = kmBuscar.toFixed(1) + " km";
+        document.getElementById('scan-lbl-km-levar').innerText = kmLevar.toFixed(1) + " km";
+        document.getElementById('scan-lbl-km-total').innerText = kmTotal.toFixed(1) + " km";
+        
+        const lblRKm = document.getElementById('scan-lbl-r-km');
+        lblRKm.innerText = `R$ ${rPorKm.toFixed(2)}/km`;
+        lblRKm.className = ""; 
+
+        if (rPorKm < 1.40) {
+            lblRKm.classList.add("cor-vermelha");
+        } else if (rPorKm >= 1.40 && rPorKm <= 1.90) {
+            lblRKm.classList.add("cor-amarela");
+        } else {
+            lblRKm.classList.add("cor-verde");
+        }
+
+        // Exibe a caixinha de decisão
+        document.getElementById('alertScannerBox').style.display = "block";
+    }
+
+    function confirmarSalvarScanner(deveArquivar) {
+        if (dadosScanTemporarios) {
+            // Se for marcado como "Arquivar", o valor entra zerado (0.0), simulando o efeito fosco desconsiderado no caixa
+            let valorFinalParaOCaixa = deveArquivar ? 0.0 : dadosScanTemporarios.valorFloat;
+
+            // Injeta os dados nos campos correspondentes da sua calculadora nativa
+            document.getElementById('calc-valor-liquido').value = valorFinalParaOCaixa.toFixed(2);
+            
+            // Adiciona automaticamente o valor final processado ao histórico existente do seu sistema
+            if(valorFinalParaOCaixa > 0) {
+                historicoCorridas.push({ id: Date.now(), valor: valorFinalParaOCaixa });
+                salvarDados();
+            }
+
+            // Abre automaticamente o modal da calculadora nativa para você ver o resultado e calcular troco se precisar
+            fecharModalScanner();
+            openCalcModal();
+            
+            // Preenche o campo de "Valor Total da Corrida" da calculadora para atualizar a soma geral
+            document.getElementById('calc-valor-corrida').value = valorFinalParaOCaixa.toFixed(2);
+            calcularCorrida();
+
+            mostrarAlerta(deveArquivar ? "Corrida processada como Arquivada (Valor zerado no caixa)." : "Corrida inserida com sucesso na calculadora!");
+        }
+        document.getElementById('alertScannerBox').style.display = "none";
+    }
+      
 
 </script>
     
