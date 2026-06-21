@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -524,9 +522,44 @@
     font-size: 0.85em;
     text-align: left;
 }
+    .btn-reactivate-anual { background: #d35400; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; margin-top: 5px; }
+    .btn-delete-anual { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; margin-top: 5px; }
+   
+    /* Estilos para a lista de produtos vendidos no modal do Olho */
+.compras-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #eee;
+}
+.compras-img {
+    width: 45px;
+    height: 45px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+.compras-info {
+    flex: 1;
+}
+.compras-info h5 {
+    margin: 0 0 3px 0;
+    font-size: 0.95em;
+    color: var(--secondary);
+}
+.compras-qtd {
+    font-size: 0.85em;
+    color: #666;
+}
+.compras-total-item {
+    font-weight: bold;
+    color: var(--primary);
+    font-size: 0.95em;
+}
 
-
-    
     </style>
 </head>
 <body>
@@ -728,13 +761,21 @@
             <button class="btn-back" onclick="closeFaturamentoModal()">← Voltar</button>
             <h2 style="margin:0; font-size: 15px;">Faturamento Acumulado</h2>
         </div>
+        
+        <div id="comprasModal" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+        <h3 style="margin-top: 0; color: var(--secondary); border-bottom: 2px solid #eee; padding-bottom: 8px; font-size: 14px; text-align: center;">🛒 Produtos Vendidos dessa semana 🛒</h3>
+        
+        <div id="lista-produtos-compras" style="max-height: 280px; overflow-y: auto; margin: 15px 0;"></div>
+        
+        <button class="btn-apply" onclick="document.getElementById('comprasModal').style.display='none'">OK</button>
+    </div>
+</div>
 
-        <div class="dashboard">
-            <h3 style="cursor: pointer; display: inline-block; user-select: none;" onclick="toggleListaMeses()">
-                📆 Faturamento Total (Acumulado)
-            </h3>
-            <p id="total-geral-hoje">R$ 0,00</p>
-            
+
+        <div class="dashboard">          
+            <h1 style="font-size: 18px; margin: 10px auto; font-weight: 700; color: #2c3e50; text-align: center; padding: 8px 15px; background: #ecf0f1; border-radius: 20px; border-bottom: 3px solid #2ecc71; display: table;">Faturamento Bruto</h1>
+            <p id="total-geral-hoje">R$ 0,00</p>                       
             <div id="lista-meses-container" style="display: none; margin-top: 15px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
                 <h4 style="margin: 0 0 10px 0; color: var(--secondary); font-size: 0.9em;">Resumo Mensal de KMs e Valores</h4>
                 <div id="corpo-lista-meses"></div>
@@ -770,10 +811,32 @@
                     <small id="sem-roxa-km">0.00 km</small>
                 </div>
             </div>
-        </div> <div id="lista-faturamento"></div>
+            <h3 style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 10px 22px; color: white; border-radius: 25px; cursor: pointer; display: inline-block; user-select: none; font-size: 0.9em; font-weight: bold; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); transition: all 0.2s; margin: 10px 0;" onclick="toggleListaMeses()" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 14px rgba(231, 76, 60, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(231, 76, 60, 0.3)'">
+            📆 Faturamento Anual
+            </h3>
+
+        </div> 
+        
+        <div id="lista-faturamento"></div>
 
         <button class="btn-clear" style="background-color: var(--primary); color: white; border: none;" onclick="aplicarZerarInteligente()">Aplicar</button>
-   </div>
+           </div>
+</div>
+
+    <div id="anualModal" class="modal-full">
+    <div class="modal-full-content">
+        <div class="modal-header">
+            <button class="btn-back" onclick="closeAnualModal()">← Voltar</button>
+            <h2 style="margin:0; font-size: 18px;">Aplicações de Cada Mês</h2>
+        </div>
+
+        <div class="dashboard" style="background: var(--secondary); color: white;">
+            <h3 style="color: #ccc;">Valor Tributário Anual</h3>
+            <p id="total-anual-acumulado" style="color: var(--primary);">R$ 0,00</p>
+        </div>
+
+        <div id="lista-aplicacoes-anual"></div>
+    </div>
 </div>
 
 
@@ -788,1004 +851,844 @@
         </div>
     </div>
 </div>
+    <script>
+    // --- ESTADO GLOBAL DA APLICAÇÃO ---
+    let produtos = [];
+    let vendas = {};
+    let gorjetas = 0;
+    let historicoFaturamento = []; 
+    let historicoCorridas = [];
+    let historicoAnual = [];
 
-<script>
-    let produtos = JSON.parse(localStorage.getItem('uberProd_v2')) || [];
-    let caixa = JSON.parse(localStorage.getItem('uberCaixa_v2')) || { total: 0, vendasPorProduto: {} };
-    let gorjetas = parseFloat(localStorage.getItem('uberGorjetas_v2')) || 0;
-    let faturamentosAplicados = JSON.parse(localStorage.getItem('uberFaturamentos_v2')) || [];
-    let calcVinculoAtivo = true;
-    let calcValorBombonsAcumulado = 0;
-    let listaCorridas = JSON.parse(localStorage.getItem('uberCorridas_v2')) || [];
-
-    
-    function openQrModal(event) {
-    if(event) event.preventDefault(); // Evita que a página suba ao clicar no link <a>
-    document.getElementById('qrModal').style.display = 'block';
-}
-
-function closeQrModal() {
-    document.getElementById('qrModal').style.display = 'none';
-}
-    // Sistema de Alertas Estilizados Bonitos
-    function mostrarAviso(mensagem, titulo = "Aviso") {
+    // --- ALERTAS E CONFIRMAÇÕES CUSTOMIZADAS ---
+    function mostrarAlerta(mensagem, titulo = "Aviso") {
         document.getElementById('customAlertTitle').innerText = titulo;
         document.getElementById('customAlertMsg').innerText = mensagem;
         document.getElementById('customAlertBtnCancel').style.display = 'none';
-        document.getElementById('customAlert').style.display = 'block';
         
-        return new Promise((resolve) => {
-            document.getElementById('customAlertBtnOk').onclick = function() {
-                document.getElementById('customAlert').style.display = 'none';
-                resolve(true);
-            };
-        });
+        const btnOk = document.getElementById('customAlertBtnOk');
+        btnOk.onclick = function() {
+            document.getElementById('customAlert').style.display = 'none';
+        };
+        
+        document.getElementById('customAlert').style.display = 'block';
     }
-    
 
-    function mostrarConfirmacao(mensagem, titulo = "Confirmação") {
+    function mostrarConfirmacao(mensagem, titulo, callback) {
         document.getElementById('customAlertTitle').innerText = titulo;
         document.getElementById('customAlertMsg').innerText = mensagem;
-        document.getElementById('customAlertBtnCancel').style.display = 'block';
+        
+        const btnCancel = document.getElementById('customAlertBtnCancel');
+        btnCancel.style.display = 'inline-block';
+        btnCancel.innerText = "Cancelar";
+        
+        const btnOk = document.getElementById('customAlertBtnOk');
+        btnOk.innerText = "Confirmar";
+        
+        btnCancel.onclick = function() {
+            document.getElementById('customAlert').style.display = 'none';
+        };
+        
+        btnOk.onclick = function() {
+            document.getElementById('customAlert').style.display = 'none';
+            callback();
+        };
+        
         document.getElementById('customAlert').style.display = 'block';
-        
-        return new Promise((resolve) => {
-            document.getElementById('customAlertBtnOk').onclick = function() {
-                document.getElementById('customAlert').style.display = 'none';
-                resolve(true);
-            };
-            document.getElementById('customAlertBtnCancel').onclick = function() {
-                document.getElementById('customAlert').style.display = 'none';
-                resolve(false);
-            };
-        });
     }
 
-    function renderProducts() {
-        const list = document.getElementById('product-list');
-        list.innerHTML = '';
-        
-        produtos.forEach(p => {
-            const isLow = p.estoque <= 5 ? 'low-stock' : '';
-            list.innerHTML += `
-                <div class="product-card" id="card-${p.id}">
-                    <button class="btn-edit" onclick="editProduct(${p.id})">✏️</button>
-                    <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑️</button>
-                    <img src="${p.img}" class="product-img" onerror="this.src='https://via.placeholder.com/60?text=Doce'">
-                    <div class="product-details">
-                        <h4>${p.nome}</h4>
-                        <span class="stock-badge ${isLow}">Estoque: ${p.estoque}</span>
-                        <div style="margin-top:5px; font-weight: bold;">
-                        R$ <input type="number" step="0.50" id="price-${p.id}" value="${p.preco.toFixed(2)}" style="width:60px; padding:4px">
-                        </div>
-                    </div>
-                    <button class="btn-sell" ${p.estoque <= 0 ? 'disabled' : ''} onclick="sell(${p.id}, this)">Vender</button>
-                </div>
-            `;
-        });
-        updateUI();
-    }
-
-    function openCalcModal() {
-    document.getElementById('calcModal').style.display = 'block';
-    atualizarValoresCalculadora();
-}
-
-function closeCalcModal() {
-    document.getElementById('calcModal').style.display = 'none';
-}
-
-function toggleVinculo(ativado) {
-    calcVinculoAtivo = ativado;
-    atualizarValoresCalculadora();
-}
-
-function calcularCorrida() {
-    atualizarValoresCalculadora();
-}
-
-function atualizarValoresCalculadora() {
-    const valorCorrida = parseFloat(document.getElementById('calc-valor-corrida').value) || 0;
-    const somaTotal = calcValorBombonsAcumulado + valorCorrida;
-    
-    document.getElementById('calc-valor-bombons').innerText = `R$ ${calcValorBombonsAcumulado.toFixed(2)}`;
-    document.getElementById('calc-valor-corrida-txt').innerText = `R$ ${valorCorrida.toFixed(2)}`;
-    document.getElementById('calc-soma-total').innerText = `R$ ${somaTotal.toFixed(2)}`;
-}
-
-function calcularTroco() {
-    const valorCorrida = parseFloat(document.getElementById('calc-valor-corrida').value) || 0;
-    const somaTotal = calcValorBombonsAcumulado + valorCorrida;
-    const valorPago = parseFloat(document.getElementById('calc-valor-pago').value) || 0;
-    const divResultado = document.getElementById('calc-resultado-troco');
-    
-    if (valorPago < somaTotal) {
-        divResultado.style.backgroundColor = '#ffcccc';
-        divResultado.style.color = 'var(--danger)';
-        divResultado.innerText = `Valor pago é insuficiente! Falta R$ ${(somaTotal - valorPago).toFixed(2)}`;
-    } else {
-        const troco = valorPago - somaTotal;
-        divResultado.style.backgroundColor = '#d4edda';
-        divResultado.style.color = 'var(--primary)';
-        divResultado.innerText = `Dar de Troco: R$ ${troco.toFixed(2)}`;
-    }
-    divResultado.style.display = 'block';
-}
-
-    
-    function sell(id, btn) {
-    const p = produtos.find(i => i.id === id);
-    const precoAtual = parseFloat(document.getElementById(`price-${id}`).value);
-    
-    if(p.estoque > 0 && btn && !btn.classList.contains('loading')) {
-        // 1. Ativa o círculo girando
-        btn.classList.add('loading');
-
-        setTimeout(() => {
-            // 2. Após 800ms, remove o círculo e mostra o joinha 👍
-            btn.classList.remove('loading');
-            btn.innerText = '👍';
-
-            // Executa a lógica padrão do sistema
-            const card = document.getElementById(`card-${id}`);
-            card.classList.add('flash-red');
-            setTimeout(() => card.classList.remove('flash-red'), 300);
-
-            p.estoque--;
-            caixa.total += precoAtual;
-            
-            if(!caixa.vendasPorProduto[p.nome]) {
-                caixa.vendasPorProduto[p.nome] = { qtd: 0, total: 0, img: p.img, idOrigem: p.id };
-            }
-            caixa.vendasPorProduto[p.nome].qtd += 1;
-            caixa.vendasPorProduto[p.nome].total += precoAtual;
-            
-            if (calcVinculoAtivo) {
-    calcValorBombonsAcumulado += precoAtual;
-    atualizarValoresCalculadora();
-}
-
-            save();
-
-            // 3. Após mais 1 segundo com o 👍, o botão volta a dizer "Vender" e atualiza a tela
-            setTimeout(() => {
-                renderProducts();
-            }, 1000);
-
-        }, 800); // Tempo que o círculo fica girando (800 milissegundos)
-    }
-}
-
-
-        
-
-                     function aplicarFaturamento() {
-        mostrarConfirmacao("Deseja aplicar e zerar o caixa, as gorjetas e as corridas?").then((confirmado) => {
-            if (confirmado) {
-                const totalCorridasAtual = listaCorridas.reduce((sum, current) => sum + (current.valor || 0), 0);
-                const valorTotal = caixa.total + gorjetas + totalCorridasAtual;
-                
-                const agora = new Date();
-                const diaDoMes = agora.getDate();
-                const dataStr = agora.toLocaleDateString('pt-BR');
-                const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                
-                // LÓGICA AUTOMÁTICA DE CORES DA SEMANA (Cada 7 dias muda)
-                let corAutomatica = '';
-                if (diaDoMes <= 7) {
-                    corAutomatica = 'azul';     // 1ª Semana: Dias 1 a 7
-                } else if (diaDoMes <= 14) {
-                    corAutomatica = 'verde';    // 2ª Semana: Dias 8 a 14
-                } else if (diaDoMes <= 21) {
-                    corAutomatica = 'amarela';  // 3ª Semana: Dias 15 a 21
-                } else {
-                    corAutomatica = 'roxa';     // 4ª Semana + dias extras (22 até 31)
-                }
-                
-                // --- AJUSTE AQUI: Verifica se já existe um faturamento com a mesma data ---
-                const faturamentoExistente = faturamentosAplicados.find(f => f.data === dataStr);
-
-                if (faturamentoExistente) {
-                    // Se já existir a data, atualiza somando os novos valores aos antigos
-                    faturamentoExistente.valorTotal += valorTotal;
-                    faturamentoExistente.valorVendas += caixa.total;
-                    faturamentoExistente.valorGorjetas += gorjetas;
-                    faturamentoExistente.valorCorridas += totalCorridasAtual;
-                    faturamentoExistente.hora = horaStr; // Atualiza para a hora da última continuação
-
-                    // Mescla os detalhes das vendas de produtos somando as quantidades e totais
-                    for (let nome in caixa.vendasPorProduto) {
-                        if (faturamentoExistente.detalhesVendas[nome]) {
-                            faturamentoExistente.detalhesVendas[nome].qtd += caixa.vendasPorProduto[nome].qtd;
-                            faturamentoExistente.detalhesVendas[nome].total += caixa.vendasPorProduto[nome].total;
-                        } else {
-                            faturamentoExistente.detalhesVendas[nome] = JSON.parse(JSON.stringify(caixa.vendasPorProduto[nome]));
-                        }
-                    }
-
-                    // Junta a nova lista de corridas com o histórico que já estava salvo no dia
-                    if (!faturamentoExistente.arrayCorridasDetalhado) faturamentoExistente.arrayCorridasDetalhado = [];
-                    faturamentoExistente.arrayCorridasDetalhado = faturamentoExistente.arrayCorridasDetalhado.concat(JSON.parse(JSON.stringify(listaCorridas)));
-
-                } else {
-                    // Se for um dia novo, cria uma nova lista normalmente
-                    faturamentosAplicados.push({
-                        id: Date.now(),
-                        data: dataStr,
-                        hora: horaStr,
-                        valorTotal: valorTotal,
-                        valorVendas: caixa.total,
-                        valorGorjetas: gorjetas,
-                        valorCorridas: totalCorridasAtual,
-                        corSemana: corAutomatica,
-                        detalhesVendas: JSON.parse(JSON.stringify(caixa.vendasPorProduto)),
-                        arrayCorridasDetalhado: JSON.parse(JSON.stringify(listaCorridas))
-                    });
-                }
-                // --- FIM DO AJUSTE ---
-
-                caixa = { total: 0, vendasPorProduto: {} };
-                gorjetas = 0;
-                listaCorridas = [];
-
-                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-                localStorage.setItem('uberGorjetas_v2', gorjetas);
-                localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-                save();
-                updateUI();
-                mostrarAviso(`Faturamento atualizado com sucesso!`, "Sucesso");
-            }
-        });
-    }
-
-     function openFaturamentoModal() {
-    const lista = document.getElementById('lista-faturamento');
-    const totalGeralDisplay = document.getElementById('total-geral-hoje');
-    lista.innerHTML = '';
-    let somaGeral = 0;
-
-    // Inicializa os somadores para o controle SEMANAL
-    let semanasData = {
-        'azul': { total: 0, km: 0, corridas: 0, gorjetas: 0 },
-        'verde': { total: 0, km: 0, corridas: 0, gorjetas: 0 },
-        'amarela': { total: 0, km: 0, corridas: 0, gorjetas: 0 },
-        'roxa': { total: 0, km: 0, corridas: 0, gorjetas: 0 }
+    // --- INICIALIZAÇÃO E CARREGAMENTO ---
+    window.onload = function() {
+        carregarDados();
+        render();
+        atualizarDisplays();
     };
 
-    // Objeto temporário para calcular o controle DIÁRIO
-    let faturamentoPorDia = {};
-
-             // Criando variáveis para acumular os totais gerais
-    let totalKmsGeral = 0;
-    let totalCorridasGeral = 0;
-    let totalProdutosGeral = 0;
-    let totalGorjetasGeral = 0;
-
-    faturamentosAplicados.forEach(f => {
-        somaGeral += f.valorTotal;
-        const corridasSalvas = f.valorCorridas || 0; 
-        const kmSalvo = f.kmRodado || '';
-        
-        // Acumulando os valores de todas as semanas
-        totalCorridasGeral += (f.valorCorridas || 0);
-        totalProdutosGeral += (f.valorVendas || 0);
-        totalGorjetasGeral += (f.valorGorjetas || 0);
-        totalKmsGeral += parseFloat(f.kmRodado) || 0;
-
-         const corSalva = f.corSemana || '';
-        
-        // Acumula o controle DIÁRIO
-        if (!faturamentoPorDia[f.data]) {
-            faturamentoPorDia[f.data] = 0;
-        }
-        faturamentoPorDia[f.data] += f.valorTotal;
-
-        // Acumula o controle SEMANAL
-        if (corSalva && semanasData[corSalva]) {
-            semanasData[corSalva].total += f.valorTotal;
-            semanasData[corSalva].corridas += corridasSalvas;
-            semanasData[corSalva].gorjetas += (f.valorGorjetas || 0);
-            if (kmSalvo && kmSalvo > 0) {
-                semanasData[corSalva].km += parseFloat(kmSalvo);
-            }
-        }
-
-        let txtKmRodado = '';
-        if(kmSalvo && kmSalvo > 0) {
-             txtKmRodado = `<div class="resultado-km">Fez: R$ ${(corridasSalvas / kmSalvo).toFixed(2)} por KM</div>`;
-        }
-
-        lista.innerHTML += `
-            <div class="faturamento-item">
-                <div class="meta-wrapper">
-                    <div class="faturamento-meta">${f.data} às ${f.hora}</div>
-                    <div class="color-picker-container">
-                        <div class="color-dot semana-azul ${corSalva === 'azul' ? 'active' : ''}" onclick="salvarCorSemana(${f.id}, 'azul')"></div>
-                        <div class="color-dot semana-verde ${corSalva === 'verde' ? 'active' : ''}" onclick="salvarCorSemana(${f.id}, 'verde')"></div>
-                        <div class="color-dot semana-amarela ${corSalva === 'amarela' ? 'active' : ''}" onclick="salvarCorSemana(${f.id}, 'amarela')"></div>
-                        <div class="color-dot semana-roxa ${corSalva === 'roxa' ? 'active' : ''}" onclick="salvarCorSemana(${f.id}, 'roxa')"></div>
-                    </div>
-                </div>
-                <div class="faturamento-values">
-                    <span style="font-size: 1.2em; font-weight: bold; color: var(--primary)">
-                        R$ ${f.valorTotal.toFixed(2)}
-                        <div class="km-container">
-                            <input type="number" class="input-km" id="km-${f.id}" placeholder="KMs" value="${kmSalvo}">
-                            <button class="btn-km-ok" onclick="salvarKmFaturamento(${f.id})">Ok</button>
-                        </div>
-                        ${txtKmRodado}
-                    </span>
-                    <div style="text-align: right; font-size: 0.85em; color: #666;">
-                        Vendas: R$ ${f.valorVendas.toFixed(2)}<br>
-                        Gorjetas: R$ ${f.valorGorjetas.toFixed(2)}<br>
-                        Corridas: R$ ${corridasSalvas.toFixed(2)}
-                    </div>
-                </div>
-                <div class="faturamento-actions">
-                    <button class="btn-view" onclick="visualizarVendasFat(${f.id})">👁️ Visualizar</button>
-                    <button class="btn-reactivate" onclick="reativarFaturamento(${f.id})">🔄 Reativar</button>
-                    <button class="btn-del-fat" onclick="excluirFaturamento(${f.id})">🗑️ Excluir</button>
-                </div>
-            </div>
-        `;
-    });
-
-    // INSERE O RESUMO DO CONTROLE DIÁRIO NO TOPO DA LISTA DO HISTÓRICO
-    let HTMLControleDiario = `<div style="background:#fff; border-radius:10px; padding:15px; margin-bottom:15px; border-left:5px solid var(--info);">
-                                <h4 style="margin:0 0 10px 0; color:var(--secondary);">Controle por Dia (Fechados)</h4>`;
-    for (let data in faturamentoPorDia) {
-        HTMLControleDiario += `<div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px; border-bottom:1px dashed #eee; padding-bottom:3px;">
-                                <span>📅 <b>${data}</b></span>
-                                <span style="color:var(--primary); font-weight:bold;">R$ ${faturamentoPorDia[data].toFixed(2)}</span>
-                               </div>`;
-    }
-    HTMLControleDiario += `</div>`;
-    lista.innerHTML = HTMLControleDiario + lista.innerHTML;
-
-        totalGeralDisplay.innerHTML = `
-        R$ ${somaGeral.toFixed(2)}<br>
-        <span style="font-size: 0.4em; display: block; color: #666; font-weight: normal; margin-top: 10px; line-height: 1.4;">
-            🗺️ Total Geral KMs: ${totalKmsGeral} km<br>
-            🚗 Total Corridas: R$ ${totalCorridasGeral.toFixed(2)}<br>
-            🛍️ Total Produtos: R$ ${totalProdutosGeral.toFixed(2)}<br>
-            💎 Total Gorjetas: R$ ${totalGorjetasGeral.toFixed(2)}
-        </span>
-         <a href="#" style="display: inline-flex; align-items: center; justify-content: center; background-color: #2ecc71; color: white; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-family: sans-serif; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); gap: 8px;">
-    <img src="https://i.ibb.co/jkjmXQPv/105094-removebg-preview.png" alt="Ícone" style="width: 20px; height: 20px; object-fit: contain;">
-    <span>Faturamento Anual</span>
-         </a>
-
-    `;
-
-        // Atualiza os blocos visuais das semanas com os novos valores coletados e calcula R$ por KM
-    for (let cor in semanasData) {
-        const totalSemana = semanasData[cor].total;
-        const kmSemana = semanasData[cor].km;
-        const corridasSemana = semanasData[cor].corridas;
-        const gorjetasSemana = semanasData[cor].gorjetas;
-        
-        // CORREÇÃO/ADICIONAL: Calcula o valor por KM da semana com base nas corridas
-        let txtKmSemana = `${kmSemana} km`;
-        if (kmSemana > 0) {
-            const resultadoPorKm = corridasSemana / kmSemana;
-            txtKmSemana += ` (<span style="color:#fff; font-weight:bold;">R$ ${resultadoPorKm.toFixed(2)}/km</span>)`;
-        }
-        
-        document.getElementById(`sem-${cor}-val`).innerText = `R$ ${totalSemana.toFixed(2)}`;
-        document.getElementById(`sem-${cor}-corridas`).innerText = `R$ ${corridasSemana.toFixed(2)}`;
-        document.getElementById(`sem-${cor}-gorjetas`).innerText = `R$ ${gorjetasSemana.toFixed(2)}`;
-        document.getElementById(`sem-${cor}-km`).innerHTML = txtKmSemana; // Alterado para innerHTML para aceitar a estilização
-    }
-
-    document.getElementById('faturamentoModal').style.display = 'block';
-}
-
-
-    // NOVAS FUNÇÕES PARA SALVAR OS KMs E AS CORES DA SEMANA
-    function salvarKmFaturamento(id) {
-        const kmValor = parseFloat(document.getElementById(`km-${id}`).value);
-        const faturamento = faturamentosAplicados.find(f => f.id === id);
-        if (faturamento) {
-            faturamento.kmRodado = kmValor || 0;
-            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-            openFaturamentoModal(); // Atualiza a tela
+    function carregarDados() {
+        try {
+            produtos = JSON.parse(localStorage.getItem('uber_produtos')) || [];
+            vendas = JSON.parse(localStorage.getItem('uber_vendas')) || {};
+            gorjetas = parseFloat(localStorage.getItem('uber_gorjetas')) || 0;
+            historicoFaturamento = JSON.parse(localStorage.getItem('uber_historico_faturamento')) || [];
+            historicoCorridas = JSON.parse(localStorage.getItem('uber_historico_corridas')) || [];
+            historicoAnual = JSON.parse(localStorage.getItem('uber_historico_anual')) || [];
+        } catch (e) {
+            console.error("Erro ao carregar dados do LocalStorage", e);
+            mostrarAlerta("Erro ao carregar dados salvos. Se persistir, limpe o cache.");
         }
     }
 
-    function salvarCorSemana(id, cor) {
-        const faturamento = faturamentosAplicados.find(f => f.id === id);
-        if (faturamento) {
-            // Se clicar na mesma cor já ativa, desmarca ela
-            faturamento.corSemana = faturamento.corSemana === cor ? '' : cor;
-            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-            openFaturamentoModal(); // Atualiza a tela e os cards de resumo semanal
-        }
+    function salvarDados() {
+        localStorage.setItem('uber_produtos', JSON.stringify(produtos));
+        localStorage.setItem('uber_vendas', JSON.stringify(vendas));
+        localStorage.setItem('uber_gorjetas', gorjetas.toString());
+        localStorage.setItem('uber_historico_faturamento', JSON.stringify(historicoFaturamento));
+        localStorage.setItem('uber_historico_corridas', JSON.stringify(historicoCorridas));
+        localStorage.setItem('uber_historico_anual', JSON.stringify(historicoAnual));
+        atualizarDisplays();
     }
 
-    
-    function visualizarVendasFat(id) {
-        const fat = faturamentosAplicados.find(f => f.id === id);
-        let msg = `Resumo de Vendas (${fat.hora}):\n\n`;
-        
-        let temProdutos = false;
-        for (let item in fat.detalhesVendas) {
-            msg += `• ${item}: ${fat.detalhesVendas[item].qtd}x - R$ ${fat.detalhesVendas[item].total.toFixed(2)}\n`;
-            temProdutos = true;
-        }
-        if(!temProdutos) msg += "• Nenhuma venda de produto registrada.\n";
-        
-        msg += `\n💎 Gorjetas: R$ ${(fat.valorGorjetas || 0).toFixed(2)}\n`;
-        
-        msg += `\n🚗 Histórico de Corridas:\n`;
-        if (fat.arrayCorridasDetalhado && fat.arrayCorridasDetalhado.length > 0) {
-            fat.arrayCorridasDetalhado.forEach((c, idx) => {
-                const vCorrida = typeof c === 'object' ? c.valor : c;
-                const hCorrida = typeof c === 'object' ? ` (${c.hora})` : '';
-                msg += `  - Corrida Nº ${idx + 1}: R$ ${vCorrida.toFixed(2)}${hCorrida}\n`;
-            });
-        } else if ((fat.valorCorridas || 0) > 0) {
-            msg += `  - Total unificado: R$ ${fat.valorCorridas.toFixed(2)}\n`;
-        } else {
-            msg += `  - Nenhuma corrida registrada.\n`;
-        }
-        
-        mostrarAviso(msg, `Detalhes do Faturamento`);
-    }
-
-    function reativarFaturamento(id) {
-        mostrarConfirmacao("Deseja reativar este faturamento? Os valores acumulados dele voltarão para a tela inicial somando-se ao caixa atual, e o estoque dos itens vendidos será devolvido (subtraído).").then((confirmado) => {
-            if (confirmado) {
-                const fat = faturamentosAplicados.find(f => f.id === id);
-                
-                // 1. Devolve os valores monetários
-                caixa.total += fat.valorVendas;
-                gorjetas += fat.valorGorjetas;
-                
-                // 2. Devolve os objetos das corridas detalhadas
-                if(fat.arrayCorridasDetalhado && fat.arrayCorridasDetalhado.length > 0) {
-                    listaCorridas = listaCorridas.concat(fat.arrayCorridasDetalhado);
-                } else if(fat.valorCorridas > 0) {
-                    const agora = new Date();
-                    listaCorridas.push({
-                        valor: fat.valorCorridas,
-                        data: fat.data,
-                        hora: fat.hora
-                    });
-                }
-                
-                // 3. Devolve os produtos no objeto 'caixa' atual e deduz o estoque correspondente
-                for (let nome in fat.detalhesVendas) {
-                    const itemSalvo = fat.detalhesVendas[nome];
-                    
-                    if (!caixa.vendasPorProduto[nome]) {
-                        caixa.vendasPorProduto[nome] = { 
-                            qtd: 0, 
-                            total: 0, 
-                            img: itemSalvo.img, 
-                            idOrigem: itemSalvo.idOrigem 
-                        };
-                    }
-                    caixa.vendasPorProduto[nome].qtd += itemSalvo.qtd;
-                    caixa.vendasPorProduto[nome].total += itemSalvo.total;
-                    
-                    // Ajusta estoque físico dos produtos ativos (vendeu no faturamento = sai do estoque agora)
-                    const p = produtos.find(item => item.id === itemSalvo.idOrigem);
-                    if (p) {
-                        p.estoque = Math.max(0, p.estoque - itemSalvo.qtd);
-                    }
-                }
-                
-                // 4. Remove este registro do histórico de acumulados
-                faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
-                
-                // 5. Salva as alterações
-                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-                localStorage.setItem('uberGorjetas_v2', gorjetas);
-                localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-                save();
-                renderProducts();
-                closeFaturamentoModal();
-                
-                mostrarAviso("Valores reativados e restaurados na tela inicial com sucesso!", "Sucesso");
-            }
-        });
-    }
-
-    function excluirFaturamento(id) {
-        mostrarConfirmacao("Deseja excluir este registro de faturamento?").then((confirmado) => {
-            if (confirmado) {
-                faturamentosAplicados = faturamentosAplicados.filter(f => f.id !== id);
-                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-                openFaturamentoModal();
-            }
-        });
-    }
-
-    function closeFaturamentoModal() {
-        document.getElementById('faturamentoModal').style.display = 'none';
-    }
-
-    function limparFaturamentoAcumulado() {
-        mostrarConfirmacao("Deseja zerar todo o histórico de faturamento?").then((confirmado) => {
-            if (confirmado) {
-                faturamentosAplicados = [];
-                localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-                openFaturamentoModal();
-            }
-        });
-    }
-
-    function updateUI() {
-        const totalCorridas = listaCorridas.reduce((sum, current) => sum + (current.valor || 0), 0);
-        const displayDash = document.getElementById('total-corridas-dashboard');
-        if(displayDash) displayDash.innerText = `R$ ${totalCorridas.toFixed(2)}`;
-   
-        const formatado = `R$ ${caixa.total.toFixed(2)}`;
-        document.getElementById('total-caixa').innerText = formatado;
-        
-        // No resumo de vendas (💰), o Faturamento Total agora mostra o caixa atual
-        document.getElementById('total-caixa-modal').innerText = formatado;
-        
-        document.getElementById('total-gorjetas').innerText = `R$ ${gorjetas.toFixed(2)}`;
-        
-        const body = document.getElementById('history-body');
-        body.innerHTML = '';
-        
-        for(let nome in caixa.vendasPorProduto) {
-            const v = caixa.vendasPorProduto[nome];
-            body.innerHTML += `
-                <tr>
-                    <td style="display:flex; align-items:center;">
-                        <img src="${v.img}" class="img-history" onerror="this.src='https://via.placeholder.com/30?text=D'">
-                        ${nome}
-                    </td>
-                    <td style="text-align:center">${v.qtd}</td>
-                    <td style="text-align:right">R$ ${v.total.toFixed(2)}</td>
-                    <td style="text-align:center">
-                        <button class="btn-minus" onclick="removerVenda('${nome}')">–</button>
-                    </td>
-                </tr>
-            `;
-        }
-    }
-
-    function removerVenda(nome) {
-        const venda = caixa.vendasPorProduto[nome];
-        if (venda && venda.qtd > 0) {
-            const valorUnitario = venda.total / venda.qtd;
-            caixa.total -= valorUnitario;
-            venda.qtd -= 1;
-            venda.total -= valorUnitario;
-            const p = produtos.find(item => item.id === venda.idOrigem);
-            if (p) p.estoque += 1;
-            if (venda.qtd <= 0) delete caixa.vendasPorProduto[nome];
-            save();
-            renderProducts();
-        }
-    }
-
-    let modoEdicaoGorjeta = false; // Controla se vai substituir ou somar
-
-function addTip() {
-    const valor = parseFloat(document.getElementById('tip-amount').value);
-    if(!isNaN(valor) && valor >= 0) {
-        if (modoEdicaoGorjeta) {
-            gorjetas = valor; // Substitui o valor quando clicado no texto
-        } else {
-            gorjetas += valor; // Continua somando quando usado o botão flutuante roxo
-        }
-        localStorage.setItem('uberGorjetas_v2', gorjetas);
-        closeTipModal();
-        updateUI();
-    }
-}
-
-function openEditTipModal() { 
-    modoEdicaoGorjeta = true; // Ativa modo de substituição direta
-    document.getElementById('tip-amount').value = gorjetas.toFixed(2);
-    document.getElementById('tipModal').style.display = 'block'; 
-}
-
-function openTipModal() { 
-    modoEdicaoGorjeta = false; // Ativa modo de soma (botão flutuante)
-    document.getElementById('tip-amount').value = '';
-    document.getElementById('tipModal').style.display = 'block'; 
-}
-
-
-    function resetTips() {
-        mostrarConfirmacao("Deseja zerar o total de gorjetas?").then((confirmado) => {
-            if (confirmado) {
-                gorjetas = 0;
-                localStorage.setItem('uberGorjetas_v2', gorjetas);
-                updateUI();
-                closeTipModal();
-            }
-        });
-    }
-
-    function saveNewProduct() {
-        const idParaEditar = document.getElementById('edit-id').value;
-        const nome = document.getElementById('new-name').value;
-        const img = document.getElementById('new-img').value;
-        const preco = parseFloat(document.getElementById('new-price').value);
-        const estoque = parseInt(document.getElementById('new-stock').value) || 0;
-
-        if(nome && preco) {
-            if(idParaEditar) {
-                const p = produtos.find(item => item.id == idParaEditar);
-                p.nome = nome; p.img = img; p.preco = preco; p.estoque = estoque;
-            } else {
-                produtos.push({ id: Date.now(), nome, img, preco, estoque });
-            }
-            save();
-            closeModal();
-            renderProducts();
-            ['new-name','new-img','new-price','new-stock', 'edit-id'].forEach(id => document.getElementById(id).value = '');
-        }
-    }
-
-    function editProduct(id) {
-        const p = produtos.find(item => item.id === id);
-        document.getElementById('edit-id').value = p.id;
-        document.getElementById('new-name').value = p.nome;
-        document.getElementById('new-img').value = p.img;
-        document.getElementById('new-price').value = p.preco;
-        document.getElementById('new-stock').value = p.estoque;
-        document.getElementById('modal-title').innerText = "Editar Produto";
-        document.getElementById('btn-modal-save').innerText = "Salvar Alterações";
-        openModal();
-    }
-
-    function deleteProduct(id) {
-        mostrarConfirmacao("Excluir produto?").then((confirmado) => {
-            if (confirmado) {
-                produtos = produtos.filter(p => p.id !== id);
-                save();
-                renderProducts();
-            }
-        });
-    }
-
-    function save() {
-        localStorage.setItem('uberProd_v2', JSON.stringify(produtos));
-        localStorage.setItem('uberCaixa_v2', JSON.stringify(caixa));
-        updateUI();
-    }
-
-    function resetDay() {
-        mostrarConfirmacao("Deseja zerar as vendas do dia?").then((confirmado) => {
-            if (confirmado) {
-                caixa = { total: 0, vendasPorProduto: {} };
-                save();
-            }
-        });
-    }
-
-    /* Novas Funções de Backup (Baixar) e Upload (Restaurar) */
+    // --- BACKUP E COMPARTILHAMENTO ---
     function baixarBackup() {
-        const dadosDoSistema = {
-            produtos: produtos,
-            caixa: caixa,
-            gorjetas: gorjetas,
-            faturamentosAplicados: faturamentosAplicados
+        const dados = {
+            produtos, vendas, gorjetas, historicoFaturamento, historicoCorridas, historicoAnual
         };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosDoSistema, null, 2));
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dados));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `backup_caixa_uber_${Date.now()}.json`);
+        downloadAnchor.setAttribute("download", `caixa_uber_backup_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
     }
 
     function fazerUpload(event) {
-        const arquivo = event.target.files[0];
-        if (!arquivo) return;
-
-        const leitor = new FileReader();
-        leitor.onload = function(e) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
             try {
-                const dadosImportados = JSON.parse(e.target.result);
-                
-                mostrarConfirmacao("Isto irá substituir todos os dados atuais do sistema pelo arquivo importado. Deseja continuar?").then((confirmado) => {
-                    if (confirmado) {
-                        if (dadosImportados.produtos) produtos = dadosImportados.produtos;
-                        if (dadosImportados.caixa) caixa = dadosImportados.caixa;
-                        if (dadosImportados.gorjetas !== undefined) gorjetas = parseFloat(dadosImportados.gorjetas);
-                        if (dadosImportados.faturamentosAplicados) faturamentosAplicados = dadosImportados.faturamentosAplicados;
-
-                        localStorage.setItem('uberProd_v2', JSON.stringify(produtos));
-                        localStorage.setItem('uberCaixa_v2', JSON.stringify(caixa));
-                        localStorage.setItem('uberGorjetas_v2', gorjetas);
-                        localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-
-                        renderProducts();
-                        mostrarAviso("Dados restaurados com sucesso!", "Sucesso");
-                    }
-                });
+                const dados = JSON.parse(e.target.result);
+                if (dados.produtos && dados.vendas !== undefined) {
+                    produtos = dados.produtos;
+                    vendas = dados.vendas;
+                    gorjetas = dados.gorjetas || 0;
+                    historicoFaturamento = dados.historicoFaturamento || [];
+                    historicoCorridas = dados.historicoCorridas || [];
+                    historicoAnual = dados.historicoAnual || [];
+                    salvarDados();
+                    render();
+                    mostrarAlerta("Backup restaurado com sucesso!", "Sucesso");
+                } else {
+                    mostrarAlerta("Arquivo JSON inválido ou incompatível.", "Erro");
+                }
             } catch (err) {
-                mostrarAviso("Erro ao ler o arquivo de backup. Certifique-se de escolher um arquivo .json válido gerado pelo sistema.", "Erro");
+                mostrarAlerta("Erro ao ler o arquivo de backup.", "Erro");
             }
-            event.target.value = ''; // Limpa o input
         };
-        leitor.readAsText(arquivo);
+        reader.readAsText(file);
     }
 
+    // --- ATUALIZAÇÕES DE TELA ---
+    function formatarDinheiro(valor) {
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function calcularTotalVendasDia() {
+        let total = 0;
+        for (let id in vendas) {
+            const p = produtos.find(prod => prod.id == id);
+            if (p) total += p.preco * vendas[id];
+        }
+        return total;
+    }
+
+    function calcularTotalCorridasDia() {
+        return historicoCorridas.reduce((acc, c) => acc + c.valor, 0);
+    }
+
+    function atualizarDisplays() {
+        const totalVendas = calcularTotalVendasDia();
+        const totalCorridas = calcularTotalCorridasDia();
+        const totalCaixa = totalVendas + totalCorridas + gorjetas;
+
+        document.getElementById('total-caixa').innerText = formatarDinheiro(totalCaixa);
+        document.getElementById('total-gorjetas').innerText = `${formatarDinheiro(gorjetas)}`;
+        document.getElementById('total-corridas-dashboard').innerText = formatarDinheiro(totalCorridas);
+
+        document.getElementById('total-caixa-modal').innerText = formatarDinheiro(totalVendas);
+        document.getElementById('total-corridas-modal').innerText = formatarDinheiro(totalCorridas);
+
+        atualizarFaturamentoAcumulado();
+    }
+
+    function atualizarFaturamentoAcumulado() {
+        let totalAcumuladoValores = 0;
+        let semanas = {
+            'azul': { total: 0, corridas: 0, gorjetas: 0, km: 0 },
+            'verde': { total: 0, corridas: 0, gorjetas: 0, km: 0 },
+            'amarela': { total: 0, corridas: 0, gorjetas: 0, km: 0 },
+            'roxa': { total: 0, corridas: 0, gorjetas: 0, km: 0 }
+        };
+
+        historicoFaturamento.forEach(item => {
+            totalAcumuladoValores += item.total;
+            let cor = item.corSemana || 'azul';
+            if (semanas[cor]) {
+                semanas[cor].total += item.total;
+                semanas[cor].corridas += item.corridas || 0;
+                semanas[cor].gorjetas += item.gorjetas || 0;
+                semanas[cor].km += item.km || 0;
+            }
+        });
+
+        document.getElementById('total-geral-hoje').innerText = formatarDinheiro(totalAcumuladoValores);
+
+        for (let cor in semanas) {
+            document.getElementById(`sem-${cor}-val`).innerText = formatarDinheiro(semanas[cor].total);
+            document.getElementById(`sem-${cor}-corridas`).innerText = formatarDinheiro(semanas[cor].corridas);
+            document.getElementById(`sem-${cor}-gorjetas`).innerText = formatarDinheiro(semanas[cor].gorjetas);
+            document.getElementById(`sem-${cor}-km`).innerText = `${semanas[cor].km.toFixed(2)} km`;
+        }
+
+        let totalAnual = historicoAnual.reduce((acc, item) => acc + item.total, 0);
+        document.getElementById('total-anual-acumulado').innerText = formatarDinheiro(totalAnual);
+    }
+
+    // --- PRODUTOS E VENDAS ---
+    function render() {
+        const list = document.getElementById('product-list');
+        list.innerHTML = '';
+
+        produtos.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.id = `product-card-${p.id}`;
+
+            const isLow = p.estoque <= 2;
+            const btnDisabled = p.estoque <= 0 ? 'disabled' : '';
+
+            card.innerHTML = `
+                <img src="${p.img || 'https://via.placeholder.com/60'}" class="product-img" alt="${p.nome}">
+                <div class="product-details">
+                    <h4>${p.nome}</h4>
+                    <div style="font-weight: bold; color: var(--secondary); margin-bottom:4px;">${formatarDinheiro(p.preco)}</div>
+                    <span class="stock-badge ${isLow ? 'low-stock' : ''}">Estoque: ${p.estoque}</span>
+                </div>
+                <button class="btn-sell" id="btn-sell-${p.id}" ${btnDisabled} onclick="vender(${p.id})">Vender</button>
+                <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
+                <button class="btn-delete" onclick="deletarProduto(${p.id})">&times;</button>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function vender(id) {
+        const p = produtos.find(prod => prod.id === id);
+        if (p && p.estoque > 0) {
+            const btn = document.getElementById(`btn-sell-${id}`);
+            btn.classList.add('loading');
+
+            setTimeout(() => {
+                p.estoque--;
+                vendas[id] = (vendas[id] || 0) + 1;
+                salvarDados();
+                render();
+
+                if (document.getElementById('calcModal').style.display === 'block' && document.getElementById('calc-vincular').checked) {
+                    calcularCorrida();
+                }
+                btn.classList.remove('loading');
+            }, 350);
+        }
+    }
+
+    function saveNewProduct() {
+        const id = document.getElementById('edit-id').value;
+        const nome = document.getElementById('new-name').value.trim();
+        const img = document.getElementById('new-img').value.trim();
+        const preco = parseFloat(document.getElementById('new-price').value);
+        const estoque = parseInt(document.getElementById('new-stock').value);
+
+        if (!nome || isNaN(preco) || isNaN(estoque)) {
+            mostrarAlerta("Preencha os campos obrigatórios de Nome, Preço e Estoque.");
+            return;
+        }
+
+        if (id) {
+            const p = produtos.find(prod => prod.id == id);
+            if (p) {
+                p.nome = nome; p.img = img; p.preco = preco; p.estoque = estoque;
+            }
+        } else {
+            produtos.push({ id: Date.now(), nome, img, preco, estoque });
+        }
+
+        salvarDados();
+        render();
+        closeModal();
+    }
+
+    function deletarProduto(id) {
+        mostrarConfirmacao("Excluir este produto permanentemente?", "Excluir Produto", () => {
+            produtos = produtos.filter(p => p.id !== id);
+            if (vendas[id]) delete vendas[id];
+            salvarDados();
+            render();
+        });
+    }
+
+    // --- MODAIS (ABRIR / FECHAR) ---
     function openModal() {
+        document.getElementById('modal-title').innerText = "Novo Produto";
+        document.getElementById('edit-id').value = '';
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-img').value = '';
+        document.getElementById('new-price').value = '';
+        document.getElementById('new-stock').value = '';
+        document.getElementById('btn-modal-save').innerText = "Cadastrar";
         document.getElementById('productModal').style.display = 'block';
     }
 
-    function closeModal() { 
-        document.getElementById('productModal').style.display = 'none';
-        document.getElementById('edit-id').value = '';
-        document.getElementById('modal-title').innerText = "Novo Produto";
-        document.getElementById('btn-modal-save').innerText = "Cadastrar";
+    function openEditModal(id) {
+        const p = produtos.find(prod => prod.id === id);
+        if (!p) return;
+        document.getElementById('modal-title').innerText = "Editar Produto";
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('new-name').value = p.nome;
+        document.getElementById('new-img').value = p.img || '';
+        document.getElementById('new-price').value = p.preco;
+        document.getElementById('new-stock').value = p.estoque;
+        document.getElementById('btn-modal-save').innerText = "Salvar Alterações";
+        document.getElementById('productModal').style.display = 'block';
     }
 
-    function openHistoryModal() { document.getElementById('historyModal').style.display = 'block'; }
-    function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
-    function openTipModal() { 
-        document.getElementById('tip-amount').value = gorjetas.toFixed(2);
-        document.getElementById('tipModal').style.display = 'block'; 
-    }
-    function closeTipModal() { document.getElementById('tipModal').style.display = 'none'; }
-
-    function openRidesModal() {
-    document.getElementById('ridesModal').style.display = 'block';
-    renderRides();
-}
-
-function closeRidesModal() {
-    document.getElementById('ridesModal').style.display = 'none';
-}
-
-function adicionarCorridaHistorico() {
-    const inputCorrida = document.getElementById('calc-valor-corrida');
-    const valor = parseFloat(inputCorrida.value);
-
-    if (!isNaN(valor) && valor > 0) {
-        listaCorridas.push(valor);
-        localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-        updateUI();
-        mostrarAviso(`Corrida de R$ ${valor.toFixed(2)} adicionada com sucesso!`, "Sucesso");
-        inputCorrida.value = '';
-        atualizarValoresCalculadora();
-    } else {
-        mostrarAviso("Por favor, digite um valor válido para a corrida.", "Aviso");
-    }
-}
+    function closeModal() { document.getElementById('productModal').style.display = 'none'; }
+    function openTipModal() { document.getElementById('tipModal').style.display = 'block'; document.getElementById('tip-amount').focus(); }
+    function closeTipModal() { document.getElementById('tipModal').style.display = 'none'; document.getElementById('tip-amount').value = ''; }
     
-    // NOVA FUNÇÃO: ADICIONAR VALOR LÍQUIDO DIRETO NO RELATÓRIO
-function adicionarCorridaLiquidaHistorico() {
-    const inputLiquido = document.getElementById('calc-valor-liquido');
-    const valor = parseFloat(inputLiquido.value);
-
-    if (!isNaN(valor) && valor > 0) {
-        const agora = new Date();
-        const dataStr = agora.toLocaleDateString('pt-BR');
-        const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-
-        // Modificado para salvar um objeto com valor, data e hora
-        listaCorridas.push({
-            valor: valor,
-            data: dataStr,
-            hora: horaStr
+    function openEditTipModal() {
+        mostrarConfirmacao("Deseja modificar o valor atual de gorjetas?", "Editar Gorjeta", () => {
+            const novoValor = prompt("Digite o novo valor total de Gorjetas (R$):", gorjetas.toFixed(2));
+            if (novoValor !== null) {
+                const parsed = parseFloat(novoValor.replace(',', '.'));
+                if (!isNaN(parsed) && parsed >= 0) {
+                    gorjetas = parsed;
+                    salvarDados();
+                } else {
+                    mostrarAlerta("Valor inválido.");
+                }
+            }
         });
-        
-        localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-        updateUI();
-        mostrarAviso(`Ganho real de R$ ${valor.toFixed(2)} adicionado ao relatório!`, "Sucesso");
-        inputLiquido.value = '';
-    } else {
-        mostrarAviso("Por favor, digite um valor ganho válido.", "Aviso");
     }
-}
 
+    function openHistoryModal() {
+        const body = document.getElementById('history-body');
+        body.innerHTML = '';
 
+        let totalGeral = 0;
+        for (let id in vendas) {
+            const p = produtos.find(prod => prod.id == id);
+            if (p) {
+                const qtd = vendas[id];
+                const totalItem = p.preco * qtd;
+                totalGeral += totalItem;
 
-function adicionarGorjetaCalculadora() {
-    const inputGorjeta = document.getElementById('calc-valor-gorjeta-campo');
-    const valor = parseFloat(inputGorjeta.value);
-
-    if (!isNaN(valor) && valor > 0) {
-        gorjetas += valor; // Soma e acrescenta ao valor acumulado existente
-        localStorage.setItem('uberGorjetas_v2', gorjetas);
-        updateUI();
-        mostrarAviso(`Gorjeta de R$ ${valor.toFixed(2)} acrescentada com sucesso!`, "Sucesso");
-        inputGorjeta.value = '';
-    } else {
-        mostrarAviso("Por favor, digite um valor válido para a gorjeta.", "Aviso");
-    }
-}
-
-function renderRides() {
-    const body = document.getElementById('rides-body');
-    const totalModal = document.getElementById('total-corridas-modal');
-    body.innerHTML = '';
-    
-    let total = 0;
-    listaCorridas.forEach((corrida, index) => {
-        // Garante compatibilidade caso haja alguma corrida antiga salva apenas como número
-        const valor = typeof corrida === 'object' ? corrida.valor : corrida;
-        const dataHora = typeof corrida === 'object' ? `${corrida.data} às ${corrida.hora}` : 'Data n/d';
-        
-        total += valor;
-        body.innerHTML += `
-            <tr>
-                <td>
-                    <div>Corrida Nº ${index + 1}</div>
-                    <small style="color: #888; font-size: 0.8em;">${dataHora}</small>
-                </td>
-                <td style="text-align:right; font-weight:bold; vertical-align: middle;">R$ ${valor.toFixed(2)}</td>
-                <td style="text-align:center; vertical-align: middle;">
-                    <button class="btn-minus" style="background:none; border:none; width:auto; height:auto; cursor:pointer;" onclick="excluirCorrida(${index})">
-                        <img src="https://i.ibb.co/Q7pbFfwN/106591-removebg-preview.png" style="width:40px; height:40px; object-fit:contain;" alt="Excluir">
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-    
-    totalModal.innerText = `R$ ${total.toFixed(2)}`;
-}
-
-    
-function excluirCorrida(index) {
-    mostrarConfirmacao("Deseja apagar esta corrida do histórico?").then((confirmado) => {
-        if (confirmado) {
-            listaCorridas.splice(index, 1);
-            localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-            renderRides();
-            updateUI();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${p.img || 'https://via.placeholder.com/60'}" class="img-history">${p.nome}</td>
+                    <td style="text-align:center">${qtd}</td>
+                    <td style="text-align:right; font-weight:bold">${formatarDinheiro(totalItem)}</td>
+                    <td style="text-align:center"><button class="btn-minus" onclick="removerUmaVenda(${id})">-</button></td>
+                `;
+                body.appendChild(tr);
+            }
         }
-    });
-}
-
-    
-    renderProducts();
-    
-    // Abre e fecha a lista de meses ao clicar no Calendário/Faturamento Total
-function toggleListaMeses() {
-    const container = document.getElementById('lista-meses-container');
-    if (container.style.display === 'none') {
-        renderizarListaMeses();
-        container.style.display = 'block';
-    } else {
-        container.style.display = 'none';
+        document.getElementById('historyModal').style.display = 'block';
     }
-}
 
-// Agrupa e renderiza os dados calculando o total de vendas, gorjetas, KMs e corridas por mês
-function renderizarListaMeses() {
-    const corpo = document.getElementById('corpo-lista-meses');
-    corpo.innerHTML = '';
-    
-    // Objeto para agrupar por "Mês/Ano"
-    let agrupadoPorMes = {};
-    
-    faturamentosAplicados.forEach(f => {
-        // Extrai o mês e ano da data (ex: "25/06/2026" vira "06/2026")
-        const partesData = f.data.split('/');
-        if (partesData.length < 3) return;
-        const mesAno = `${partesData[1]}/${partesData[2]}`;
-        
-        if (!agrupadoPorMes[mesAno]) {
-            agrupadoPorMes[mesAno] = {
-                vendas: 0,
-                gorjetas: 0,
-                corridas: 0,
-                total: 0,
-                km: 0
-            };
+    function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
+
+    function removerUmaVenda(id) {
+        if (vendas[id] && vendas[id] > 0) {
+            vendas[id]--;
+            const p = produtos.find(prod => prod.id == id);
+            if (p) p.estoque++;
+            if (vendas[id] === 0) delete vendas[id];
+            salvarDados();
+            render();
+            openHistoryModal();
+            if (document.getElementById('calcModal').style.display === 'block' && document.getElementById('calc-vincular').checked) {
+                calcularCorrida();
+            }
         }
-        
-        agrupadoPorMes[mesAno].vendas += f.valorVendas || 0;
-        agrupadoPorMes[mesAno].gorjetas += f.valorGorjetas || 0;
-        agrupadoPorMes[mesAno].corridas += f.valorCorridas || 0;
-        agrupadoPorMes[mesAno].total += f.valorTotal || 0;
-        agrupadoPorMes[mesAno].km += parseFloat(f.kmRodado) || 0;
-    });
-    
-    const mesesValores = Object.keys(agrupadoPorMes);
-    if (mesesValores.length === 0) {
-        corpo.innerHTML = '<p style="font-size:0.85em; color:#888; margin:0;">Nenhum dado registrado ainda.</p>';
-        return;
     }
-    
-    mesesValores.forEach(mes => {
-        const dados = agrupadoPorMes[mes];
-        corpo.innerHTML += `
-            <div style="padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 0.85em; color: #444;">
-                <b style="color: var(--secondary); font-size: 1.1em;">📅 ${mes}</b><br>
-                💵 <b>Faturamento Total:</b> R$ ${dados.total.toFixed(2)}<br>
-                🛍️ <b>Vendas:</b> R$ ${dados.vendas.toFixed(2)} | 💎 <b>Gorjetas:</b> R$ ${dados.gorjetas.toFixed(2)}<br>
-                🚗 <b>Corridas:</b> R$ ${dados.corridas.toFixed(2)} | 🗺️ <b>Total KMs:</b> ${dados.km.toFixed(2)} km
-            </div>
-        `;
-    });
-}
 
-// Executa a ação do botão "Aplicar" (Antigo Zerar Histórico) de forma inteligente
-function aplicarZerarInteligente() {
-    mostrarConfirmacao("Isso irá zerar tudo da tela inicial e aplicar os valores dentro do calendário unificando o mês atual. Você tem certeza?", "Aviso Importante").then((confirmado) => {
-        if (confirmado) {
-            const totalCorridasAtual = listaCorridas.reduce((sum, current) => sum + (current.valor || 0), 0);
-            const valorTotal = caixa.total + gorjetas + totalCorridasAtual;
-            
-            // Pega o mês e ano corrente de forma dinâmica
-            const agora = new Date();
-            const dataStr = agora.toLocaleDateString('pt-BR');
-            const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-            const partesHoje = dataStr.split('/');
-            const mesAnoAtual = `${partesHoje[1]}/${partesHoje[2]}`;
-            
-            // Descobre se já tem faturamento inserido nesse mesmo mês/ano
-            let faturamentoDoMes = faturamentosAplicados.find(f => {
-                const partesF = f.data.split('/');
-                return partesF.length === 3 && `${partesF[1]}/${partesF[2]}` === mesAnoAtual;
-            });
-            
-            if (faturamentoDoMes) {
-                // Inteligente: soma o que já tem se for no mesmo mês
-                faturamentoDoMes.valorTotal += valorTotal;
-                faturamentoDoMes.valorVendas += caixa.total;
-                faturamentoDoMes.valorGorjetas += gorjetas;
-                faturamentoDoMes.valorCorridas += totalCorridasAtual;
-                faturamentoDoMes.hora = horaStr;
-                
-                // Agrupa também os detalhes de produtos
-                for (let nome in caixa.vendasPorProduto) {
-                    if (faturamentoDoMes.detalhesVendas[nome]) {
-                        faturamentoDoMes.detalhesVendas[nome].qtd += caixa.vendasPorProduto[nome].qtd;
-                        faturamentoDoMes.detalhesVendas[nome].total += caixa.vendasPorProduto[nome].total;
-                    } else {
-                        faturamentoDoMes.detalhesVendas[nome] = JSON.parse(JSON.stringify(caixa.vendasPorProduto[nome]));
+    function addTip() {
+        const val = parseFloat(document.getElementById('tip-amount').value);
+        if (!isNaN(val) && val > 0) {
+            gorjetas += val;
+            salvarDados();
+            closeTipModal();
+        }
+    }
+
+    function resetTips() {
+        mostrarConfirmacao("Tem certeza que deseja zerar as Gorjetas acumuladas?", "Zerar Gorjetas", () => {
+            gorjetas = 0;
+            salvarDados();
+            closeTipModal();
+        });
+    }
+
+    function resetDay() {
+        mostrarConfirmacao("Isso irá zerar todas as vendas registradas hoje na listagem (o estoque não será alterado). Prosseguir?", "Zerar Vendas do Dia", () => {
+            vendas = {};
+            salvarDados();
+            openHistoryModal();
+        });
+    }
+
+    // --- FATURAMENTO DIÁRIO (APLICAÇÃO E REATIVAÇÃO) ---
+        function aplicarFaturamento() {
+        const totalVendas = calcularTotalVendasDia();
+        const totalCorridas = calcularTotalCorridasDia();
+        const totalCaixa = totalVendas + totalCorridas + gorjetas;
+
+        if (totalCaixa <= 0) {
+            mostrarAlerta("Não há faturamento para aplicar hoje.");
+            return;
+        }
+
+        const hoje = new Date();
+        const dataFormatada = hoje.toLocaleDateString('pt-BR') + ' ' + hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        // --- LÓGICA DE RECONHECIMENTO DA COR DA SEMANA PELO DIA ---
+        const diaDoMes = hoje.getDate();
+        let corDefinida = 'azul';
+
+        if (diaDoMes >= 1 && diaDoMes <= 7) {
+            corDefinida = 'azul';
+        } else if (diaDoMes >= 8 && diaDoMes <= 14) {
+            corDefinida = 'verde';
+        } else if (diaDoMes >= 15 && diaDoMes <= 21) {
+            corDefinida = 'amarela';
+        } else if (diaDoMes >= 22) {
+            corDefinida = 'roxa'; // Fica roxa até acabar o mês
+        }
+
+        const novoRegistro = {
+            id: Date.now(),
+            data: dataFormatada,
+            total: totalCaixa,
+            vendas: totalVendas,
+            corridas: totalCorridas,
+            gorjetas: gorjetas,
+            corSemana: corDefinida, // Aplica a cor calculada automaticamente
+            km: 0,
+            detalhesVendas: JSON.parse(JSON.stringify(vendas)),
+            detalhesCorridas: JSON.parse(JSON.stringify(historicoCorridas))
+        };
+
+        historicoFaturamento.unshift(novoRegistro);
+        
+        // Zera os acumuladores do dia para consolidar o faturamento
+        vendas = {};
+        historicoCorridas = [];
+        gorjetas = 0;
+
+        salvarDados();
+        render();
+        mostrarAlerta("Faturamento do dia aplicado com sucesso!", "Sucesso");
+    }
+
+    function reativarFaturamento(id) {
+        mostrarConfirmacao("Deseja reativar este faturamento? O caixa e as vendas do dia atual serão substituídos por este histórico.", "Reativar Faturamento", () => {
+            const index = historicoFaturamento.findIndex(item => item.id === id);
+            if (index !== -1) {
+                const faturamentoParaReativar = historicoFaturamento[index];
+
+                // Devolve os produtos vendidos de volta para o estoque antes de carregar o backup
+                for (let prodId in vendas) {
+                    const p = produtos.find(prod => prod.id == prodId);
+                    if (p) p.estoque += vendas[prodId];
+                }
+
+                // Remove os produtos do faturamento antigo do estoque para refletir o estado reativado
+                const antigasVendas = faturamentoParaReativar.detalhesVendas || {};
+                for (let prodId in antigasVendas) {
+                    const p = produtos.find(prod => prod.id == prodId);
+                    if (p) {
+                        p.estoque -= antigasVendas[prodId];
+                        if (p.estoque < 0) p.estoque = 0; // Evita estoque negativo indesejado
                     }
                 }
-                if (!faturamentoDoMes.arrayCorridasDetalhado) faturamentoDoMes.arrayCorridasDetalhado = [];
-                faturamentoDoMes.arrayCorridasDetalhado = faturamentoDoMes.arrayCorridasDetalhado.concat(JSON.parse(JSON.stringify(listaCorridas)));
-            } else {
-                // Se for um mês totalmente novo, cria a primeira inserção dele
-                let diaDoMes = agora.getDate();
-                let corAutomatica = diaDoMes <= 7 ? 'azul' : diaDoMes <= 14 ? 'verde' : diaDoMes <= 21 ? 'amarela' : 'roxa';
-                
-                faturamentosAplicados.push({
-                    id: Date.now(),
-                    data: dataStr,
-                    hora: horaStr,
-                    valorTotal: valorTotal,
-                    valorVendas: caixa.total,
-                    valorGorjetas: gorjetas,
-                    valorCorridas: totalCorridasAtual,
-                    corSemana: corAutomatica,
-                    kmRodado: 0,
-                    detalhesVendas: JSON.parse(JSON.stringify(caixa.vendasPorProduto)),
-                    arrayCorridasDetalhado: JSON.parse(JSON.stringify(listaCorridas))
-                });
+
+                // Restaura o estado daquele dia para a tela principal
+                vendas = JSON.parse(JSON.stringify(antigasVendas));
+                historicoCorridas = JSON.parse(JSON.stringify(faturamentoParaReativar.detalhesCorridas || []));
+                gorjetas = faturamentoParaReativar.gorjetas || 0;
+
+                // Remove o registro do histórico acumulado
+                historicoFaturamento.splice(index, 1);
+
+                salvarDados();
+                render();
+                closeFaturamentoModal();
+                mostrarAlerta("Histórico reativado com sucesso! Os valores retornaram para o painel principal.", "Sucesso");
             }
-            
-            // Zera tudo na tela inicial fisicamente após aplicar
-            caixa = { total: 0, vendasPorProduto: {} };
-            gorjetas = 0;
-            listaCorridas = [];
-            
-            localStorage.setItem('uberFaturamentos_v2', JSON.stringify(faturamentosAplicados));
-            localStorage.setItem('uberGorjetas_v2', gorjetas);
-            localStorage.setItem('uberCorridas_v2', JSON.stringify(listaCorridas));
-            
-            save();
-            updateUI();
-            
-            // Esconde a caixa da lista para fazê-la sumir como solicitado
-            document.getElementById('lista-meses-container').style.display = 'none';
-            
-            openFaturamentoModal(); // Recarrega o modal atualizado
-            mostrarAviso("O histórico foi zerado na inicial e unificado com sucesso no calendário!", "Sucesso");
+        });
+    }
+
+    function deletarFaturamentoHistorico(id) {
+        mostrarConfirmacao("Excluir este registro de faturamento permanentemente?", "Excluir Histórico", () => {
+            historicoFaturamento = historicoFaturamento.filter(item => item.id !== id);
+            salvarDados();
+            openFaturamentoModal();
+        });
+    }
+
+    function atualizarCorSemana(id, novaCor) {
+        const item = historicoFaturamento.find(i => i.id === id);
+        if (item) {
+            item.corSemana = novaCor;
+            salvarDados();
+            openFaturamentoModal();
         }
-    });
+    }
+
+    function atualizarKMFaturamento(id, inputElement) {
+        const val = parseFloat(inputElement.value);
+        if (!isNaN(val) && val >= 0) {
+            const item = historicoFaturamento.find(i => i.id === id);
+            if (item) {
+                item.km = val;
+                salvarDados();
+                openFaturamentoModal();
+                mostrarAlerta("KM atualizado com sucesso!");
+            }
+        } else {
+            mostrarAlerta("Digite um número de KM válido.");
+        }
+    }
+
+    function openFaturamentoModal() {
+        const lista = document.getElementById('lista-faturamento');
+        lista.innerHTML = '';
+
+        if (historicoFaturamento.length === 0) {
+            lista.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">Nenhum faturamento aplicado ainda.</p>';
+        }
+
+        historicoFaturamento.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'faturamento-item';
+            
+            const ganhoPorKm = item.km > 0 ? (item.total / item.km) : 0;
+
+            div.innerHTML = `
+                <div class="meta-wrapper">
+                    <div class="faturamento-meta">📅 ${item.data}</div>
+                    <div class="color-picker-container">
+                        <div class="color-dot semana-azul ${item.corSemana==='azul'?'active':''}" onclick="atualizarCorSemana(${item.id}, 'azul')"></div>
+                        <div class="color-dot semana-verde ${item.corSemana==='verde'?'active':''}" onclick="atualizarCorSemana(${item.id}, 'verde')"></div>
+                        <div class="color-dot semana-amarela ${item.corSemana==='amarela'?'active':''}" onclick="atualizarCorSemana(${item.id}, 'amarela')"></div>
+                        <div class="color-dot semana-roxa ${item.corSemana==='roxa'?'active':''}" onclick="atualizarCorSemana(${item.id}, 'roxa')"></div>
+                    </div>
+                </div>
+                <div class="faturamento-values">
+                    <div>
+                        <strong>Total: ${formatarDinheiro(item.total)}</strong><br>
+                        <small style="color:#666">Corridas: ${formatarDinheiro(item.corridas || 0)}<br>
+                           Vendas: ${formatarDinheiro(item.vendas || 0)}<br>
+                           Gorjetas: ${formatarDinheiro(item.gorjetas || 0)}</small>
+                        <div class="resultado-km" id="res-km-${item.id}">${ganhoPorKm > 0 ? `Ganho por KM: ${formatarDinheiro(ganhoPorKm)}` : ''}</div>
+                    </div>
+                    <div class="faturamento-actions">
+                        <button class="btn-view" title="Visualizar Detalhes" onclick="abrirModalComprasPorHistorico(${item.id})">Vendo</button>
+                        <button class="btn-reactivate" onclick="reativarFaturamento(${item.id})">🔄</button>
+                        <button class="btn-del-fat" onclick="deletarFaturamentoHistorico(${item.id})">&times;</button>
+                    </div>
+                </div>
+                <div style="margin-top: 8px;" class="km-container">
+                    <label style="font-size: 0.8em; color:#555;">KM rodado:</label>
+                    <input type="number" step="0.1" class="input-km" id="km-input-${item.id}" value="${item.km || ''}" placeholder="0.0">
+                    <button class="btn-km-ok" onclick="atualizarKMFaturamento(${item.id}, document.getElementById('km-input-${item.id}'))">OK</button>
+                </div>
+            `;
+            lista.appendChild(div);
+        });
+
+        atualizarDisplays();
+        document.getElementById('faturamentoModal').style.display = 'block';
+    }
+
+    function closeFaturamentoModal() { document.getElementById('faturamentoModal').style.display = 'none'; }
+
+    function verDetalhesFaturamento(id) {
+        const item = historicoFaturamento.find(i => i.id === id);
+        if (!item) return;
+
+        let msg = `Resumo Completo do Dia:\n`;
+        msg += `Data: ${item.data}\n`;
+        msg += `Total Geral: ${formatarDinheiro(item.total)}\n`;
+        msg += `Faturamento Corridas: ${formatarDinheiro(item.corridas || 0)}\n`;
+        msg += `Faturamento Vendas: ${formatarDinheiro(item.vendas || 0)}\n`;
+        msg += `Faturamento Gorjetas: ${formatarDinheiro(item.gorjetas || 0)}\n`;
+        if (item.km > 0) msg += `KM Rodado: ${item.km} km\n`;
+
+        mostrarAlerta(msg, "Detalhes do Faturamento");
+    }
+
+    // --- FATURAMENTO MENSAL/ANUAL (APLICAÇÃO E REATIVAÇÃO) ---
+    function aplicarZerarInteligente() {
+        let totalAcumuladoValores = 0;
+        historicoFaturamento.forEach(item => { totalAcumuladoValores += item.total; });
+
+        if (totalAcumuladoValores <= 0) {
+            mostrarAlerta("Não há faturamento acumulado na listagem para aplicar no fechamento mensal.");
+            return;
+        }
+
+        mostrarConfirmacao(`Deseja consolidar e fechar o faturamento de todos os meses listados no valor total de ${formatarDinheiro(totalAcumuladoValores)}? A lista atual será limpa para o início de um novo ciclo.`, "Fechar Faturamento Mensal", () => {
+            const hoje = new Date();
+            const opcoes = { month: 'long', year: 'numeric' };
+            const nomeMes = hoje.toLocaleDateString('pt-BR', opcoes);
+
+            const novoRegistroAnual = {
+                id: Date.now(),
+                mes: nomeMes.toUpperCase(),
+                total: totalAcumuladoValores,
+                detalhesFaturamentoCompleto: JSON.parse(JSON.stringify(historicoFaturamento)) // Armazena a listagem diária completa
+            };
+
+            historicoAnual.unshift(novoRegistroAnual);
+            
+            // Limpa a listagem acumulada
+            historicoFaturamento = [];
+            
+            salvarDados();
+            openFaturamentoModal();
+            mostrarAlerta(`Faturamento mensal fechado e salvo no histórico anual com sucesso!`, "Sucesso");
+        });
+    }
+
+    function reativarFaturamentoAnual(id) {
+        mostrarConfirmacao("Deseja reativar o faturamento deste mês? O histórico de faturamento diário atual será limpo e substituído pelas parcelas deste mês.", "Reativar Mês", () => {
+            const index = historicoAnual.findIndex(item => item.id === id);
+            if (index !== -1) {
+                const mesParaReativar = historicoAnual[index];
+
+                // Retorna toda a lista de dias salvos de volta para o faturamento acumulado
+                historicoFaturamento = JSON.parse(JSON.stringify(mesParaReativar.detalhesFaturamentoCompleto || []));
+
+                // Remove o registro do histórico anual acumulado
+                historicoAnual.splice(index, 1);
+
+                salvarDados();
+                closeAnualModal();
+                openFaturamentoModal();
+                mostrarAlerta("Faturamento mensal reativado! O histórico de dias retornou para a tela de faturamento acumulado.", "Sucesso");
+            }
+        });
+    }
+
+    function deletarAnualHistorico(id) {
+        mostrarConfirmacao("Excluir definitivamente este faturamento mensal do histórico anual?", "Excluir Registro Anual", () => {
+            historicoAnual = historicoAnual.filter(item => item.id !== id);
+            salvarDados();
+            openAnualModal();
+        });
+    }
+
+    function toggleListaMeses() {
+        const container = document.getElementById('lista-meses-container');
+        if (container.style.display === 'none') {
+            openAnualModal();
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function openAnualModal() {
+        const lista = document.getElementById('lista-aplicacoes-anual');
+        lista.innerHTML = '';
+
+        if (historicoAnual.length === 0) {
+            lista.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">Nenhum fechamento mensal realizado ainda.</p>';
+        }
+
+        historicoAnual.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'faturamento-item';
+            div.style.borderLeft = '5px solid #d35400';
+            div.innerHTML = `
+                <div class="faturamento-meta">📅 APLICAÇÃO CONSOLIDADA</div>
+                <div class="faturamento-values">
+                    <div>
+                        <strong style="color: #d35400; font-size:1.1em;">${item.mes}</strong><br>
+                        <strong>Valor Total: ${formatarDinheiro(item.total)}</strong>
+                    </div>
+                    <div class="faturamento-actions" style="margin-top: 5px;">
+                        <button class="btn-reactivate-anual" onclick="reativarFaturamentoAnual(${item.id})">🔄 Reativar Mês</button>
+                        <button class="btn-delete-anual" onclick="deletarAnualHistorico(${item.id})">&times; Excluir</button>
+                    </div>
+                </div>
+            `;
+            lista.appendChild(div);
+        });
+
+        document.getElementById('anualModal').style.display = 'block';
+    }
+
+    function closeAnualModal() { document.getElementById('anualModal').style.display = 'none'; }
+
+    // --- CORRIDAS E CALCULADORA ---
+    function openRidesModal() {
+        const body = document.getElementById('rides-body');
+        body.innerHTML = '';
+
+        if (historicoCorridas.length === 0) {
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888; padding:20px;">Nenhuma corrida realizada hoje.</td></tr>';
+        }
+
+        historicoCorridas.forEach((c, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:bold"># ${idx + 1}º Corrida</td>
+                <td style="text-align:right; font-weight:bold; color: var(--danger)">${formatarDinheiro(c.valor)}</td>
+                <td style="text-align:center"><button class="btn-minus" onclick="removerCorridaHistorico(${c.id})">-</button></td>
+            `;
+            body.appendChild(tr);
+        });
+
+        document.getElementById('ridesModal').style.display = 'block';
+    }
+
+    function closeRidesModal() { document.getElementById('ridesModal').style.display = 'none'; }
+
+    function removerCorridaHistorico(id) {
+        historicoCorridas = historicoCorridas.filter(c => c.id !== id);
+        salvarDados();
+        openRidesModal();
+    }
+
+    function openCalcModal() {
+        document.getElementById('calcModal').style.display = 'block';
+        document.getElementById('calc-valor-corrida').value = '';
+        document.getElementById('calc-valor-pago').value = '';
+        document.getElementById('calc-valor-liquido').value = '';
+        document.getElementById('calc-valor-gorjeta-campo').value = '';
+        
+        const resTroco = document.getElementById('calc-resultado-troco');
+        resTroco.style.display = 'none';
+        resTroco.innerText = '';
+        
+        calcularCorrida();
+    }
+
+    function closeCalcModal() { document.getElementById('calcModal').style.display = 'none'; }
+
+    function toggleVinculo(vinculado) { calcularCorrida(); }
+
+    function calcularCorrida() {
+        let valorBombons = 0;
+        if (document.getElementById('calc-vincular').checked) {
+            valorBombons = calcularTotalVendasDia();
+        }
+
+        const inputCorrida = parseFloat(document.getElementById('calc-valor-corrida').value) || 0;
+        const totalSoma = valorBombons + inputCorrida;
+
+        document.getElementById('calc-valor-bombons').innerText = formatarDinheiro(valorBombons);
+        document.getElementById('calc-valor-corrida-txt').innerText = formatarDinheiro(inputCorrida);
+        document.getElementById('calc-soma-total').innerText = formatarDinheiro(totalSoma);
+    }
+
+    function calcularTroco() {
+        let valorBombons = 0;
+        if (document.getElementById('calc-vincular').checked) {
+            valorBombons = calcularTotalVendasDia();
+        }
+        const inputCorrida = parseFloat(document.getElementById('calc-valor-corrida').value) || 0;
+        const totalSoma = valorBombons + inputCorrida;
+
+        const valorPago = parseFloat(document.getElementById('calc-valor-pago').value) || 0;
+        const divResultado = document.getElementById('calc-resultado-troco');
+
+        if (valorPago <= 0) {
+            divResultado.style.display = 'block';
+            divResultado.style.background = '#f8d7da';
+            divResultado.style.color = '#721c24';
+            divResultado.innerText = 'Digite o valor pago pelo passageiro.';
+            return;
+        }
+
+        const troco = valorPago - totalSoma;
+        divResultado.style.display = 'block';
+
+        if (troco < 0) {
+            divResultado.style.background = '#f8d7da';
+            divResultado.style.color = '#721c24';
+            divResultado.innerText = `Passageiro Deve: ${formatarDinheiro(Math.abs(troco))}`;
+        } else {
+            divResultado.style.background = '#d4edda';
+            divResultado.style.color = '#155724';
+            divResultado.innerText = `Troco: ${formatarDinheiro(troco)}`;
+        }
+    }
+
+    function adicionarCorridaLiquidaHistorico() {
+        const val = parseFloat(document.getElementById('calc-valor-liquido').value);
+        if (!isNaN(val) && val > 0) {
+            historicoCorridas.push({ id: Date.now(), valor: val });
+            salvarDados();
+            mostrarAlerta(`Corrida de ${formatarDinheiro(val)} adicionada ao caixa do dia!`, "Sucesso");
+            document.getElementById('calc-valor-liquido').value = '';
+            calcularCorrida();
+        } else {
+            mostrarAlerta("Digite um valor válido para a corrida.");
+        }
+    }
+
+    function adicionarGorjetaCalculadora() {
+        const val = parseFloat(document.getElementById('calc-valor-gorjeta-campo').value);
+        if (!isNaN(val) && val > 0) {
+            gorjetas += val;
+            salvarDados();
+            mostrarAlerta(`Gorjeta de ${formatarDinheiro(val)} adicionada ao painel principal!`, "Sucesso");
+            document.getElementById('calc-valor-gorjeta-campo').value = '';
+            calcularCorrida();
+        } else {
+            mostrarAlerta("Digite um valor válido para a gorjeta.");
+        }
+    }
+
+    function openQrModal(e) { e.preventDefault(); document.getElementById('qrModal').style.display = 'block'; }
+    function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
+    
+    // Função para abrir o novo modal organizado com os produtos vendidos
+function abrirModalComprasPorHistorico(id) {
+    const item = historicoFaturamento.find(i => i.id === id);
+    if (!item) return;
+
+    const containerLista = document.getElementById('lista-produtos-compras');
+    containerLista.innerHTML = ''; // Limpa a lista antiga
+
+    const antigasVendas = item.detalhesVendas || {};
+    let temProdutos = false;
+
+    for (let prodId in antigasVendas) {
+        const p = produtos.find(prod => prod.id == prodId);
+        if (p) {
+            temProdutos = true;
+            const qtd = antigasVendas[prodId];
+            const totalItem = p.preco * qtd;
+
+            // Cria o item da lista totalmente estilizado e organizado
+            const divItem = document.createElement('div');
+            divItem.className = 'compras-item';
+            divItem.innerHTML = `
+                <img src="${p.img || 'https://via.placeholder.com/60'}" class="compras-img" alt="${p.nome}">
+                <div class="compras-info">
+                    <h5>${p.nome}</h5>
+                    <span class="compras-qtd">Qtd: <strong>${qtd}</strong> x ${formatarDinheiro(p.preco)}</span>
+                </div>
+                <div class="compras-total-item">${formatarDinheiro(totalItem)}</div>
+            `;
+            containerLista.appendChild(divItem);
+        }
+    }
+
+    if (!temProdutos) {
+        containerLista.innerHTML = '<p style="text-align:center; color:#888; padding:10px;">Nenhum produto vendido neste faturamento.</p>';
+    }
+
+    // Abre o novo modal na tela
+    document.getElementById('comprasModal').style.display = 'block';
 }
 
 </script>
+    
 </body>
 </html>
