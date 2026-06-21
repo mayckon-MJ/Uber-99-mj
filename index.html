@@ -5,6 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+    // Cria e pré-carrega o Worker em segundo plano assim que a página abre
+    let tesseractWorker = null;
+    async function inicializarWorker() {
+        tesseractWorker = await Tesseract.createWorker('por');
+        // Força o Tesseract a focar apenas em números, pontos, vírgulas e letras da Uber
+        await tesseractWorker.setParameters({
+            tessedit_char_whitelist: '0123456789R$.,km() ',
+        });
+    }
+    inicializarWorker();
+</script>
+
     <title>Meu Caixa Uber - Estoque e Vendas</title>
     <style>
         :root {
@@ -1923,7 +1936,7 @@
     function closeAnualModal() { document.getElementById('anualModal').style.display = 'none'; }
 
     // --- CORRIDAS E CALCULADORA ---
-    function openRidesModal() {
+        function openRidesModal() {
         const body = document.getElementById('rides-body');
         body.innerHTML = '';
 
@@ -1933,9 +1946,17 @@
 
         historicoCorridas.forEach((c, idx) => {
             const tr = document.createElement('tr');
+            // ALTERADO: Adicionado Data, KM e R$/KM na exibição da lista
+            const exibirKm = c.kmTotal ? `${c.kmTotal.toFixed(1)} km` : '---';
+            const exibirRPorKm = c.rPorKm ? `(R$ ${c.rPorKm.toFixed(2)}/km)` : '';
+            const exibirData = c.dataHora ? `<br><small style="color:#888">${c.dataHora}</small>` : '';
+
             tr.innerHTML = `
-                <td style="font-weight:bold"># ${idx + 1}º Corrida</td>
-                <td style="text-align:right; font-weight:bold; color: var(--danger)">${formatarDinheiro(c.valor)}</td>
+                <td style="font-weight:bold"># ${idx + 1}º Corrida ${exibirData}</td>
+                <td style="text-align:right; font-weight:bold; color: var(--danger)">
+                    ${formatarDinheiro(c.valor)}<br>
+                    <small style="color:#666">${exibirKm} ${exibirRPorKm}</small>
+                </td>
                 <td style="text-align:center"><button class="btn-minus" onclick="removerCorridaHistorico(${c.id})">-</button></td>
             `;
             body.appendChild(tr);
@@ -1943,6 +1964,7 @@
 
         document.getElementById('ridesModal').style.display = 'block';
     }
+
 
     function closeRidesModal() { document.getElementById('ridesModal').style.display = 'none'; }
 
@@ -2152,7 +2174,7 @@ function abrirModalComprasPorHistorico(id) {
         }
     }
 
-    function capturarEFotografarOCR() {
+        function capturarEFotografarOCR() {
         document.getElementById('scan-status-text').innerText = "Analisando imagem...";
         const videoEl = document.getElementById('scan-video');
         const canvasEl = document.getElementById('scan-canvas');
@@ -2169,16 +2191,31 @@ function abrirModalComprasPorHistorico(id) {
         
         const imagemData = canvasEl.toDataURL('image/png');
 
-        Tesseract.recognize(imagemData, 'por')
-            .then(({ data: { text } }) => {
-                document.getElementById('scan-status-text').innerText = "Leitura finalizada!";
-                analisarTextoDoApp(text);
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('scan-status-text').innerText = "Erro na leitura digital.";
-            });
+        // ALTERADO: Uso do Worker ultra rápido com parâmetros restritos
+        if (tesseractWorker) {
+            tesseractWorker.recognize(imagemData)
+                .then(({ data: { text } }) => {
+                    document.getElementById('scan-status-text').innerText = "Leitura finalizada!";
+                    analisarTextoDoApp(text);
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('scan-status-text').innerText = "Erro na leitura digital.";
+                });
+        } else {
+            // Caso o worker ainda não tenha carregado totalmente no início da página
+            Tesseract.recognize(imagemData, 'por')
+                .then(({ data: { text } }) => {
+                    document.getElementById('scan-status-text').innerText = "Leitura finalizada!";
+                    analisarTextoDoApp(text);
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('scan-status-text').innerText = "Erro na leitura.";
+                });
+        }
     }
+
 
     function analisarTextoDoApp(textoBruto) {
         // Captura o Valor (Ex: R$ 14,60)
@@ -2235,25 +2272,30 @@ function abrirModalComprasPorHistorico(id) {
         document.getElementById('alertScannerBox').style.display = "block";
     }
 
-    function confirmarSalvarScanner(deveArquivar) {
+        function confirmarSalvarScanner(deveArquivar) {
         if (dadosScanTemporarios) {
-            // Se for marcado como "Arquivar", o valor entra zerado (0.0), simulando o efeito fosco desconsiderado no caixa
             let valorFinalParaOCaixa = deveArquivar ? 0.0 : dadosScanTemporarios.valorFloat;
 
-            // Injeta os dados nos campos correspondentes da sua calculadora nativa
             document.getElementById('calc-valor-liquido').value = valorFinalParaOCaixa.toFixed(2);
             
-            // Adiciona automaticamente o valor final processado ao histórico existente do seu sistema
             if(valorFinalParaOCaixa > 0) {
-                historicoCorridas.push({ id: Date.now(), valor: valorFinalParaOCaixa });
+                // ALTERADO: Agora salva a Data/Hora, Km Total e o Valor por KM igual no Alerta
+                const agora = new Date();
+                const dataHoraFormatada = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                historicoCorridas.push({ 
+                    id: Date.now(), 
+                    valor: valorFinalParaOCaixa,
+                    dataHora: dataHoraFormatada,
+                    kmTotal: dadosScanTemporarios.kmTotal,
+                    rPorKm: dadosScanTemporarios.rPorKm
+                });
                 salvarDados();
             }
 
-            // Abre automaticamente o modal da calculadora nativa para você ver o resultado e calcular troco se precisar
             fecharModalScanner();
             openCalcModal();
             
-            // Preenche o campo de "Valor Total da Corrida" da calculadora para atualizar a soma geral
             document.getElementById('calc-valor-corrida').value = valorFinalParaOCaixa.toFixed(2);
             calcularCorrida();
 
@@ -2261,6 +2303,7 @@ function abrirModalComprasPorHistorico(id) {
         }
         document.getElementById('alertScannerBox').style.display = "none";
     }
+
       
 
 </script>
