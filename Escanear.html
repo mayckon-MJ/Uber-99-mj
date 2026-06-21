@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Captura de Corridas</title>
+    <title>Captura de Corridas - Inteligente</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,23 +25,17 @@
             background: #00c853;
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 12px 24px;
             font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
             margin: 10px 5px;
             font-weight: bold;
         }
-        button.btn-excluir {
-            background: #d32f2f;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-        button.btn-editar {
-            background: #f57c00;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
+        button.btn-excluir { background: #d32f2f; padding: 8px 12px; font-size: 14px; }
+        button.btn-editar { background: #f57c00; padding: 8px 12px; font-size: 14px; }
+        button.btn-arquivar-item { background: #757575; padding: 8px 12px; font-size: 14px; }
+        
         .status {
             margin: 15px 0;
             color: #aaa;
@@ -60,21 +55,48 @@
             justify-content: space-between;
             align-items: center;
             border-left: 5px solid #00c853;
+            transition: opacity 0.3s;
         }
-        .dados-corrida {
-            flex-grow: 1;
+        /* Classe para deixar o item fosco quando arquivado */
+        .item-corrida.arquivado {
+            opacity: 0.35;
+            border-left: 5px solid #757575;
         }
-        .dados-corrida p {
-            margin: 5px 0;
+        .dados-corrida { flex-grow: 1; }
+        .dados-corrida p { margin: 5px 0; }
+        .destaque { color: #00c853; font-weight: bold; }
+        .acoes { display: flex; gap: 5px; flex-wrap: wrap; }
+
+        /* Cores Dinâmicas de Ganhos */
+        .cor-vermelha { color: #ff5252 !important; font-weight: bold; }
+        .cor-amarela { color: #ffd740 !important; font-weight: bold; }
+        .cor-verde { color: #69f0ae !important; font-weight: bold; }
+
+        /* Estilo do Alerta Customizado no Meio da Tela */
+        .modal-alerta {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
         }
-        .destaque {
-            color: #00c853;
-            font-weight: bold;
+        .modal-conteudo {
+            background: #222;
+            padding: 25px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 350px;
+            text-align: left;
+            border: 2px solid #333;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        .acoes {
-            display: flex;
-            gap: 5px;
-        }
+        .modal-conteudo h3 { margin-top: 0; text-align: center; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;}
+        .modal-conteudo p { margin: 12px 0; font-size: 15px; }
+        .modal-botoes { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+        .modal-botoes button { flex: 1; margin: 0; padding: 12px; font-size: 14px; }
+        .btn-modal-arquivar { background: #616161; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
@@ -84,18 +106,34 @@
     
     <video id="video" autoplay playsinline></video>
     <br>
-    <button id="btn-capturar">Bater Foto e Salvar</button>
+    <button id="btn-capturar">Bater Foto e Analisar</button>
     
     <canvas id="canvas" style="display:none;"></canvas>
 
     <p class="status">Status: <span id="status">Aguardando comando...</span></p>
 
+    <div id="alerta-corrida" class="modal-alerta">
+        <div class="modal-conteudo">
+            <h3>Resultado do Scanner</h3>
+            <p>Valor Bruto: <span id="lbl-valor" class="destaque">R$ 0,00</span></p>
+            <p>Km Buscar: <span id="lbl-km-buscar">0.0 km</span></p>
+            <p>Km Levar: <span id="lbl-km-levar">0.0 km</span></p>
+            <p>Km Total: <span id="lbl-km-total" class="cor-vermelha">0.0 km</span></p>
+            <p style="border-top: 1px dashed #444; padding-top: 10px;">
+                R$ por Km: <span id="lbl-resultado-r-km">R$ 0,00/km</span>
+            </p>
+            <div class="modal-botoes">
+                <button id="btn-modal-ok">OK (Salvar)</button>
+                <button id="btn-modal-arquivar" class="btn-modal-arquivar">Arquivar</button>
+            </div>
+        </div>
+    </div>
+
     <hr style="border: 1px solid #333; margin: 30px 0;">
 
     <div class="container-lista">
         <h3>Histórico de Corridas Salvas</h3>
-        <div id="lista-corridas">
-            </div>
+        <div id="lista-corridas"></div>
     </div>
 
     <script>
@@ -105,20 +143,28 @@
         const statusText = document.getElementById('status');
         const listaCorridasDiv = document.getElementById('lista-corridas');
 
-        // Array para armazenar as corridas na memória
-        let listaCorridas = [];
+        // Elementos do Alerta Customizado
+        const alertaCorrida = document.getElementById('alerta-corrida');
+        const lblValor = document.getElementById('lbl-valor');
+        const lblKmBuscar = document.getElementById('lbl-km-buscar');
+        const lblKmLevar = document.getElementById('lbl-km-levar');
+        const lblKmTotal = document.getElementById('lbl-km-total');
+        const lblResultadoRKm = document.getElementById('lbl-resultado-r-km');
+        const btnModalOk = document.getElementById('btn-modal-ok');
+        const btnModalArquivar = document.getElementById('btn-modal-arquivar');
 
-        // 1. Inicializa a câmera com a configuração padrão do navegador
+        let listaCorridas = [];
+        let corridaAtualTemporaria = null; // Guarda os dados lidos antes de decidir salvar ou arquivar
+
+        // Inicializa a câmera de forma flexível (Traseira no celular, padrão no PC)
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { 
-                video.srcObject = stream; 
-            })
+            .then(stream => { video.srcObject = stream; })
             .catch(err => { 
-                console.error("Erro ao acessar a câmera: ", err); 
-                statusText.innerText = "Erro ao acessar a câmera."; 
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => { video.srcObject = stream; })
+                    .catch(e => { statusText.innerText = "Erro ao acessar câmera."; });
             });
 
-        // 2. Evento do botão para bater foto e rodar o OCR
         btnCapturar.addEventListener('click', () => {
             statusText.innerText = "Analisando imagem da foto...";
             
@@ -129,47 +175,104 @@
             
             const imagemData = canvas.toDataURL('image/png');
 
-            // Executa o leitor OCR em português
             Tesseract.recognize(imagemData, 'por')
                 .then(({ data: { text } }) => {
-                    statusText.innerText = "Texto processado com sucesso!";
-                    processarEAdicionarNaLista(text);
+                    statusText.innerText = "Processado!";
+                    processarDadosImagem(text);
                 })
                 .catch(err => {
                     console.error(err);
-                    statusText.innerText = "Erro ao ler dados da imagem.";
+                    statusText.innerText = "Erro na leitura.";
                 });
         });
 
-        // 3. Captura o Valor e o Km usando Expressões Regulares (Regex)
-        function processarEAdicionarNaLista(textoDoScanner) {
-            // Procura por formatos como R$ 6,20 ou R$6.20
-            const regexValor = /R\$\s?\d+[\.,]\d{2}/i;
-            // Procura por formatos como 1.20km ou 1,20 km
-            const regexKm = /\d+[\.,]\d+\s?km/i;
+        function processarDadosImagem(textoDoScanner) {
+            // 1. Extração do Valor Financeiro (Ex: R$ 14,60)
+            const regexValor = /R\$\s?(\d+[\.,]\d{2})/i;
+            const matchValor = textoDoScanner.match(regexValor);
+            let valorFloat = 0.0;
+            let valorTexto = "R$ 0,00";
 
-            const resultadoValor = textoDoScanner.match(regexValor);
-            const resultadoKm = textoDoScanner.match(regexKm);
+            if (matchValor) {
+                valorTexto = matchValor[0];
+                valorFloat = parseFloat(matchValor[1].replace(',', '.'));
+            }
 
-            // Se não encontrar nada, define um valor padrão para não quebrar o sistema
-            const valorFinal = resultadoValor ? resultadoValor[0] : "R$ 0,00";
-            const kmFinal = resultadoKm ? resultadoKm[0] : "0.00 km";
+            // 2. Extração dos números de Km dentro dos parênteses (Ex: (9.7 km) e (2.7 km))
+            // Essa regex captura especificamente o número que vem antes de "km" dentro de parênteses
+            const regexParentesesKm = /\(\s*(\d+[\.,]\d+)\s*km\s*\)/gi;
+            let valoresKmEncontrados = [];
+            let match;
+            
+            while ((match = regexParentesesKm.exec(textoDoScanner)) !== null) {
+                valoresKmEncontrados.push(parseFloat(match[1].replace(',', '.')));
+            }
 
-            // Cria o objeto da nova corrida
-            const novaCorrida = {
-                id: Date.now(), // Gera um ID único baseado no tempo atual
-                valor: valorFinal,
-                km: kmFinal
+            // Mapeia os dois km de acordo com a ordem de leitura do app
+            let kmBuscar = valoresKmEncontrados[0] || 0.0;
+            let kmLevar = valoresKmEncontrados[1] || 0.0;
+            let kmTotal = kmBuscar + kmLevar;
+
+            // 3. Cálculo do valor por KM rodado total
+            let rPorKm = kmTotal > 0 ? (valorFloat / kmTotal) : 0.0;
+
+            // Salva no objeto temporário
+            corridaAtualTemporaria = {
+                valor: valorTexto,
+                valorFloat: valorFloat,
+                kmBuscar: kmBuscar.toFixed(1) + " km",
+                kmLevar: kmLevar.toFixed(1) + " km",
+                kmTotal: kmTotal.toFixed(1) + " km",
+                rPorKm: rPorKm,
+                arquivado: false
             };
 
-            // Adiciona no array e atualiza a interface
-            listaCorridas.push(novaCorrida);
-            renderizarLista();
+            // 4. Alimenta o Alerta Customizado na Tela
+            lblValor.innerText = corridaAtualTemporaria.valor;
+            lblKmBuscar.innerText = corridaAtualTemporaria.kmBuscar;
+            lblKmLevar.innerText = corridaAtualTemporaria.kmLevar;
+            lblKmTotal.innerText = corridaAtualTemporaria.kmTotal; // Sempre fixo em vermelho conforme pedido
+            
+            lblResultadoRKm.innerText = `R$ ${rPorKm.toFixed(2)}/km`;
+
+            // Aplica as cores dinâmicas com base nas regras do R$ por Km
+            lblResultadoRKm.className = ""; // limpa classes antigas
+            if (rPorKm < 1.40) {
+                lblResultadoRKm.classList.add("cor-vermelha");
+            } else if (rPorKm >= 1.40 && rPorKm <= 1.90) {
+                lblResultadoRKm.classList.add("cor-amarela");
+            } else {
+                lblResultadoRKm.classList.add("cor-verde");
+            }
+
+            // Abre o alerta na tela
+            alertaCorrida.style.display = "flex";
         }
 
-        // 4. Desenha a lista de corridas na tela com os botões de ação
+        // Ação do Botão OK (Salvar Normal)
+        btnModalOk.addEventListener('click', () => {
+            if (corridaAtualTemporaria) {
+                corridaAtualTemporaria.id = Date.now();
+                corridaAtualTemporaria.arquivado = false;
+                listaCorridas.push(corridaAtualTemporaria);
+                renderizarLista();
+            }
+            alertaCorrida.style.display = "none";
+        });
+
+        // Ação do Botão Arquivar do Alerta
+        btnModalArquivar.addEventListener('click', () => {
+            if (corridaAtualTemporaria) {
+                corridaAtualTemporaria.id = Date.now();
+                corridaAtualTemporaria.arquivado = true; // Define o estado como arquivado
+                listaCorridas.push(corridaAtualTemporaria);
+                renderizarLista();
+            }
+            alertaCorrida.style.display = "none";
+        });
+
         function renderizarLista() {
-            listaCorridasDiv.innerHTML = ""; // Limpa a lista antiga
+            listaCorridasDiv.innerHTML = "";
 
             if (listaCorridas.length === 0) {
                 listaCorridasDiv.innerHTML = "<p style='color: #666;'>Nenhuma corrida salva ainda.</p>";
@@ -177,15 +280,26 @@
             }
 
             listaCorridas.forEach(corrida => {
-                // Cria a estrutura HTML para cada linha de corrida
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'item-corrida';
+                // Adiciona a classe 'arquivado' para aplicar o efeito fosco no CSS se necessário
+                itemDiv.className = `item-corrida ${corrida.arquivado ? 'arquivado' : ''}`;
+                
+                // Determina a cor do R$/km para exibir no histórico também
+                let classeCorHistorico = "cor-verde";
+                if (corrida.rPorKm < 1.40) classeCorHistorico = "cor-vermelha";
+                else if (corrida.rPorKm >= 1.40 && corrida.rPorKm <= 1.90) classeCorHistorico = "cor-amarela";
+
                 itemDiv.innerHTML = `
                     <div class="dados-corrida">
                         <p>Valor: <span class="destaque">${corrida.valor}</span></p>
-                        <p>Distância: <span class="destaque">${corrida.km}</span></p>
+                        <p>Buscar: <span>${corrida.kmBuscar}</span> | Levar: <span>${corrida.kmLevar}</span></p>
+                        <p>Total: <span class="cor-vermelha">${corrida.kmTotal}</span></p>
+                        <p>Ganho/Km: <span class="${classeCorHistorico}">R$ ${corrida.rPorKm.toFixed(2)}/km</span></p>
                     </div>
                     <div class="acoes">
+                        <button class="btn-arquivar-item" onclick="alternarArquivar(${corrida.id})">
+                            ${corrida.arquivado ? 'Desarquivar' : 'Arquivar'}
+                        </button>
                         <button class="btn-editar" onclick="editarCorrida(${corrida.id})">Editar</button>
                         <button class="btn-excluir" onclick="excluirCorrida(${corrida.id})">Excluir</button>
                     </div>
@@ -194,25 +308,27 @@
             });
         }
 
-        // 5. Função para excluir uma corrida da lista
+        function alternarArquivar(id) {
+            const corrida = listaCorridas.find(c => c.id === id);
+            if (corrida) {
+                corrida.arquivado = !corrida.arquivado;
+                renderizarLista();
+            }
+        }
+
         function excluirCorrida(id) {
-            if (confirm("Tem certeza que deseja excluir esta corrida?")) {
+            if (confirm("Deseja excluir esta corrida?")) {
                 listaCorridas = listaCorridas.filter(corrida => corrida.id !== id);
                 renderizarLista();
             }
         }
 
-        // 6. Função para editar os valores de uma corrida manualmente
         function editarCorrida(id) {
             const corrida = listaCorridas.find(c => c.id === id);
             if (corrida) {
-                const novoValor = prompt("Edite o Valor da corrida:", corrida.valor);
-                const novoKm = prompt("Edite a quilometragem (Km):", corrida.km);
-
-                // Se o usuário não cancelar as caixas de texto, atualiza os dados
-                if (novoValor !== null && novoKm !== null) {
+                const novoValor = prompt("Edite o Valor:", corrida.valor);
+                if (novoValor !== null) {
                     corrida.valor = novoValor;
-                    corrida.km = novoKm;
                     renderizarLista();
                 }
             }
