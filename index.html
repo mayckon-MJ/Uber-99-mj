@@ -959,10 +959,15 @@
             <h2 style="margin:0; font-size: 15px;">Corridas Realizadas</h2>
         </div>
 
-        <div class="dashboard" style="background: var(--secondary); color: white;">
+                <div class="dashboard" style="background: var(--secondary); color: white;">
             <h3 style="color: #ccc;">Faturamento das Corridas</h3>
             <p id="total-corridas-modal" style="color: var(--danger);">R$ 0,00</p>
+            <h3 style="color: #ccc; margin-top: 10px;">KM Total Rodado</h3>
+            <p id="total-km-modal" style="color: var(--info); margin: 5px 0 0; font-size: 1.8em;">0.0 km</p>
+            <h3 style="color: #ccc; margin-top: 10px;">Valor Médio por KM</h3>
+            <p id="medio-rate-modal" style="color: var(--primary); margin: 5px 0 0; font-size: 1.8em;">R$ 0,00/km</p>
         </div>
+
 
         <table class="history-table">
             <thead>
@@ -1256,10 +1261,15 @@
         return historicoCorridas.reduce((acc, c) => acc + c.valor, 0);
     }
 
-    function atualizarDisplays() {
+        function atualizarDisplays() {
         const totalVendas = calcularTotalVendasDia();
         const totalCorridas = calcularTotalCorridasDia();
         const totalCaixa = totalVendas + totalCorridas + gorjetas;
+
+        // Soma os KMs de todas as corridas registradas no dia atual
+        const totalKmDia = historicoCorridas.reduce((acc, c) => acc + (c.kmTotal || 0), 0);
+        // Calcula o valor por KM rodado no dia
+        const valorPorKmDia = totalKmDia > 0 ? (totalCorridas / totalKmDia) : 0;
 
         document.getElementById('total-caixa').innerText = formatarDinheiro(totalCaixa);
         document.getElementById('total-gorjetas').innerText = `${formatarDinheiro(gorjetas)}`;
@@ -1267,6 +1277,14 @@
 
         document.getElementById('total-caixa-modal').innerText = formatarDinheiro(totalVendas);
         document.getElementById('total-corridas-modal').innerText = formatarDinheiro(totalCorridas);
+        
+        // Atualiza os novos elementos visuais do modal de Corridas Realizadas
+        if(document.getElementById('total-km-modal')) {
+            document.getElementById('total-km-modal').innerText = `${totalKmDia.toFixed(1)} km`;
+        }
+        if(document.getElementById('medio-rate-modal')) {
+            document.getElementById('medio-rate-modal').innerText = `${formatarDinheiro(valorPorKmDia)}/km`;
+        }
 
         atualizarFaturamentoAcumulado();
     }
