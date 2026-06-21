@@ -916,8 +916,8 @@
 </div>
 
 
-        <div class="dashboard">          
-            <h1 style="font-size: 18px; margin: 10px auto; font-weight: 700; color: #2c3e50; text-align: center; padding: 8px 15px; background: #ecf0f1; border-radius: 20px; border-bottom: 3px solid #2ecc71; display: table;">Faturamento Bruto</h1>
+        <div class="dashboard">       
+            <h4>Valor Total</h4>            
             <p id="total-geral-hoje">R$ 0,00</p>                       
             <div id="lista-meses-container" style="display: none; margin-top: 15px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
                 <h4 style="margin: 0 0 10px 0; color: var(--secondary); font-size: 0.9em;">Resumo Mensal de KMs e Valores</h4>
@@ -930,35 +930,39 @@
                     Total: <span id="sem-azul-val">R$ 0,00</span><br>
                     Corridas: <span id="sem-azul-corridas">R$ 0,00</span><br>
                     Gorjetas: <span id="sem-azul-gorjetas">R$ 0,00</span><br>
-                    <small id="sem-azul-km">0.00 km</small>
+                    <small id="sem-azul-km">0.00 km</small><br>
+                    <strong style="font-size: 0.9em; color: #fff;">Val/KM: <span id="sem-azul-valkm">R$ 0,00</span></strong>
                 </div>
                 <div class="card-semana semana-verde">
                     <strong>Semana Verde</strong><br>
                     Total: <span id="sem-verde-val">R$ 0,00</span><br>
                     Corridas: <span id="sem-verde-corridas">R$ 0,00</span><br>
                     Gorjetas: <span id="sem-verde-gorjetas">R$ 0,00</span><br>
-                    <small id="sem-verde-km">0.00 km</small>
+                    <small id="sem-verde-km">0.00 km</small><br>
+                    <strong style="font-size: 0.9em; color: #fff;">Val/KM: <span id="sem-verde-valkm">R$ 0,00</span></strong>
                 </div>
                 <div class="card-semana semana-amarela">
-                    <strong>Semana Amarela</strong>         
+                    <strong>Semana Amarela</strong><br>         
                     Total: <span id="sem-amarela-val">R$ 0,00</span><br>
                     Corridas: <span id="sem-amarela-corridas">R$ 0,00</span><br>
                     Gorjetas: <span id="sem-amarela-gorjetas">R$ 0,00</span><br>
-                    <small id="sem-amarela-km">0.00 km</small>
+                    <small id="sem-amarela-km">0.00 km</small><br>
+                    <strong style="font-size: 0.9em; color: #fff;">Val/KM: <span id="sem-amarela-valkm">R$ 0,00</span></strong>
                 </div>
                 <div class="card-semana semana-roxa">
                     <strong>Semana Roxa</strong><br>
                     Total: <span id="sem-roxa-val">R$ 0,00</span><br>
                     Corridas: <span id="sem-roxa-corridas">R$ 0,00</span><br>
                     Gorjetas: <span id="sem-roxa-gorjetas">R$ 0,00</span><br>
-                    <small id="sem-roxa-km">0.00 km</small>
+                    <small id="sem-roxa-km">0.00 km</small><br>
+                    <strong style="font-size: 0.9em; color: #fff;">Val/KM: <span id="sem-roxa-valkm">R$ 0,00</span></strong>
                 </div>
             </div>
-            <h3 style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 10px 22px; color: white; border-radius: 25px; cursor: pointer; display: inline-block; user-select: none; font-size: 0.9em; font-weight: bold; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); transition: all 0.2s; margin: 10px 0;" onclick="toggleListaMeses()" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 14px rgba(231, 76, 60, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(231, 76, 60, 0.3)'">
-            📆 Faturamento Anual
-            </h3>
+            
+    <h1 onclick="openAnualModal()" style="font-size: 18px; margin: 10px auto; font-weight: 700; color: #2c3e50; text-align: center; padding: 8px 15px; background: #ecf0f1; border-radius: 20px; border-bottom: 3px solid #2ecc71; display: table; cursor: pointer;">
+    Faturamento Anual
+    </h1>
 
-        </div> 
         
         <div id="lista-faturamento"></div>
 
@@ -1175,14 +1179,19 @@
             document.getElementById(`sem-${cor}-corridas`).innerText = formatarDinheiro(semanas[cor].corridas);
             document.getElementById(`sem-${cor}-gorjetas`).innerText = formatarDinheiro(semanas[cor].gorjetas);
             document.getElementById(`sem-${cor}-km`).innerText = `${semanas[cor].km.toFixed(2)} km`;
+            
+            // Nova linha que calcula o Ganho Total por KM da semana (Corridas / KM)
+            let totalPorKmSemana = semanas[cor].km > 0 ? (semanas[cor].corridas / semanas[cor].km) : 0;
+            document.getElementById(`sem-${cor}-valkm`).innerText = formatarDinheiro(totalPorKmSemana);
         }
 
         let totalAnual = historicoAnual.reduce((acc, item) => acc + item.total, 0);
         document.getElementById('total-anual-acumulado').innerText = formatarDinheiro(totalAnual);
     }
 
+
     
-        function render() {
+  function render() {
         const list = document.getElementById('product-list');
         list.innerHTML = '';
 
@@ -1488,7 +1497,7 @@
     }
 
     // --- FATURAMENTO DIÁRIO (APLICAÇÃO E REATIVAÇÃO) ---
-        function aplicarFaturamento() {
+            function aplicarFaturamento() {
         const totalVendas = calcularTotalVendasDia();
         const totalCorridas = calcularTotalCorridasDia();
         const totalCaixa = totalVendas + totalCorridas + gorjetas;
@@ -1500,6 +1509,7 @@
 
         const hoje = new Date();
         const dataFormatada = hoje.toLocaleDateString('pt-BR') + ' ' + hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const dataApenasDia = hoje.toLocaleDateString('pt-BR');
 
         // --- LÓGICA DE RECONHECIMENTO DA COR DA SEMANA PELO DIA ---
         const diaDoMes = hoje.getDate();
@@ -1512,23 +1522,46 @@
         } else if (diaDoMes >= 15 && diaDoMes <= 21) {
             corDefinida = 'amarela';
         } else if (diaDoMes >= 22) {
-            corDefinida = 'roxa'; // Fica roxa até acabar o mês
+            corDefinida = 'roxa';
         }
 
-        const novoRegistro = {
-            id: Date.now(),
-            data: dataFormatada,
-            total: totalCaixa,
-            vendas: totalVendas,
-            corridas: totalCorridas,
-            gorjetas: gorjetas,
-            corSemana: corDefinida, // Aplica a cor calculada automaticamente
-            km: 0,
-            detalhesVendas: JSON.parse(JSON.stringify(vendas)),
-            detalhesCorridas: JSON.parse(JSON.stringify(historicoCorridas))
-        };
+        // Procura se já existe um registro com a data de HOJE na lista
+        const registroExistente = historicoFaturamento.find(item => item.data.startsWith(dataApenasDia));
 
-        historicoFaturamento.unshift(novoRegistro);
+        if (registroExistente) {
+            // Se já existe, soma os novos valores aos valores antigos
+            registroExistente.total += totalCaixa;
+            registroExistente.vendas += totalVendas;
+            registroExistente.corridas += totalCorridas;
+            registroExistente.gorjetas += gorjetas;
+            registroExistente.data = dataFormatada; // Atualiza o horário para o último clique
+
+            // Combina os detalhes das vendas de forma inteligente
+            for (let prodId in vendas) {
+                registroExistente.detalhesVendas[prodId] = (registroExistente.detalhesVendas[prodId] || 0) + vendas[prodId];
+            }
+
+            // Une o histórico de corridas
+            registroExistente.detalhesCorridas = registroExistente.detalhesCorridas.concat(JSON.parse(JSON.stringify(historicoCorridas)));
+            
+            mostrarAlerta("Valores somados e atualizados no faturamento de hoje!", "Sucesso");
+        } else {
+            // Se não existe, cria um card totalmente novo
+            const novoRegistro = {
+                id: Date.now(),
+                data: dataFormatada,
+                total: totalCaixa,
+                vendas: totalVendas,
+                corridas: totalCorridas,
+                gorjetas: gorjetas,
+                corSemana: corDefinida,
+                km: 0,
+                detalhesVendas: JSON.parse(JSON.stringify(vendas)),
+                detalhesCorridas: JSON.parse(JSON.stringify(historicoCorridas))
+            };
+            historicoFaturamento.unshift(novoRegistro);
+            mostrarAlerta("Faturamento do dia aplicado com sucesso!", "Sucesso");
+        }
         
         // Zera os acumuladores do dia para consolidar o faturamento
         vendas = {};
@@ -1537,8 +1570,9 @@
 
         salvarDados();
         render();
-        mostrarAlerta("Faturamento do dia aplicado com sucesso!", "Sucesso");
     }
+
+        
 
     function reativarFaturamento(id) {
         mostrarConfirmacao("Deseja reativar este faturamento? O caixa e as vendas do dia atual serão substituídos por este histórico.", "Reativar Faturamento", () => {
@@ -1622,7 +1656,8 @@
             const div = document.createElement('div');
             div.className = 'faturamento-item';
             
-            const ganhoPorKm = item.km > 0 ? (item.total / item.km) : 0;
+            const ganhoPorKm = item.km > 0 ? (item.corridas / item.km) : 0;
+
 
             div.innerHTML = `
                 <div class="meta-wrapper">
