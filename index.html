@@ -971,6 +971,19 @@
             <p id="total-km-modal" style="color: var(--info); margin: 5px 0 0; font-size: 1.8em;">0.0 km</p>
             <h3 style="color: #ccc; margin-top: 10px;">Valor Médio por KM</h3>
             <p id="medio-rate-modal" style="color: var(--primary); margin: 5px 0 0; font-size: 1.8em;">R$ 0,00/km</p>
+
+          <div id="editRideModal" class="modal">
+    <div class="modal-content">
+        <h3>Editar Corrida 🚗</h3>
+        <input type="hidden" id="edit-ride-id">
+        <label style="font-size:0.9em; color:#666;">Valor da Corrida (R$):</label>
+        <input type="number" id="edit-ride-value" step="0.01" placeholder="0,00">
+        <label style="font-size:0.9em; color:#666;">KM Total:</label>
+        <input type="number" id="edit-ride-km" step="0.1" placeholder="0.0">
+        <button class="btn-sell" style="width:100%; margin-top:10px" onclick="salvarEdicaoCorrida()">Salvar</button>
+        <button class="btn-clear" style="border:none; margin-top:5px" onclick="document.getElementById('editRideModal').style.display='none'">Cancelar</button>
+    </div>
+    </div>          
         </div>
 
 
@@ -998,21 +1011,7 @@
         <button class="btn-clear" style="border:none; margin-top:5px" onclick="closeTipModal()">Cancelar</button>
     </div>
 </div>
-
-    <div id="editRideModal" class="modal">
-    <div class="modal-content">
-        <h3>Editar Corrida 🚗</h3>
-        <input type="hidden" id="edit-ride-id">
-        <label style="font-size:0.9em; color:#666;">Valor da Corrida (R$):</label>
-        <input type="number" id="edit-ride-value" step="0.01" placeholder="0,00">
-        <label style="font-size:0.9em; color:#666;">KM Total:</label>
-        <input type="number" id="edit-ride-km" step="0.1" placeholder="0.0">
-        <button class="btn-sell" style="width:100%; margin-top:10px" onclick="salvarEdicaoCorrida()">Salvar</button>
-        <button class="btn-clear" style="border:none; margin-top:5px" onclick="document.getElementById('editRideModal').style.display='none'">Cancelar</button>
-    </div>
-    </div>
     
-
 <div id="historyModal" class="modal-full">
     <div class="modal-full-content">
         <div class="modal-header">
